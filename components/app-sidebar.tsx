@@ -13,6 +13,8 @@ import {
   Radio,
   Sun,
   Moon,
+  Cctv,
+  Car,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -50,10 +52,20 @@ const data = {
   ],
   modules: [
     {
+      title: "Surveillance",
+      url: "/dashboard/surveillance",
+      icon: Cctv,
+      badge: "LIVE",
+    },
+    {
+      title: "Vehicle Access",
+      url: "/dashboard/vehicles",
+      icon: Car,
+    },
+    {
       title: "QRF Response",
       url: "/dashboard/qrf",
       icon: Crosshair,
-      badge: "LIVE",
     },
     {
       title: "Guard Compliance",
@@ -117,7 +129,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             OVERVIEW
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-2.5">
               {data.navMain.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
@@ -143,7 +155,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             MODULES
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-2.5">
               {data.modules.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
