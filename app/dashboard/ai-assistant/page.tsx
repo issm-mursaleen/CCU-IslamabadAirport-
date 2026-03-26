@@ -150,7 +150,7 @@ export default function AIAssistantPage() {
         style={{ animationDelay: "100ms" }}
       >
         {/* Terminal header */}
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-[#0A0E14] shrink-0">
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-secondary shrink-0">
           <Terminal className="h-3.5 w-3.5 text-tactical-green" />
           <span className="font-mono text-[10px] tracking-[0.15em] text-tactical-green/70">
             issm-ai@ops ~ $
@@ -249,7 +249,7 @@ export default function AIAssistantPage() {
         )}
 
         {/* Input */}
-        <div className="px-4 py-3 border-t border-border/40 bg-[#0A0E14] shrink-0">
+        <div className="px-4 py-3 border-t border-border/40 bg-secondary shrink-0">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[11px] text-tactical-green/50 shrink-0">
               {">>>"}
@@ -260,7 +260,7 @@ export default function AIAssistantPage() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Ask about QRF teams, guard compliance, deployments, incidents..."
-              className="flex-1 bg-transparent border-none outline-none font-mono text-[11px] text-foreground placeholder:text-muted-foreground/40"
+              className="flex-1 bg-transparent border-none outline-none font-mono text-[11px] text-foreground placeholder:text-muted-foreground/40 caret-tactical-green"
               disabled={loading}
             />
             <button

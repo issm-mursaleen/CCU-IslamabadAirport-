@@ -59,38 +59,38 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --background: #F8FAFB;
+  --foreground: #1A1D23;
+  --card: #FFFFFF;
+  --card-foreground: #1A1D23;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1D23;
+  --primary: #059669;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #1A1D23;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #F1F5F9;
+  --accent-foreground: #1A1D23;
+  --destructive: #DC2626;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #059669;
+  --chart-1: #059669;
+  --chart-2: #0891B2;
+  --chart-3: #D97706;
+  --chart-4: #DC2626;
+  --chart-5: #7C3AED;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1A1D23;
+  --sidebar-primary: #059669;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #1A1D23;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #059669;
 }
 
 .dark {
@@ -127,6 +127,18 @@
   --sidebar-ring: #00FF9D;
 }
 
+/* ── Light mode tactical accent overrides ── */
+.light {
+  --color-tactical-green: #059669;
+  --color-tactical-cyan: #0891B2;
+  --color-tactical-amber: #D97706;
+  --color-tactical-red: #DC2626;
+  --color-tactical-green-dim: #05966922;
+  --color-tactical-cyan-dim: #0891B222;
+  --color-tactical-amber-dim: #D9770622;
+  --color-tactical-red-dim: #DC262622;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -144,6 +156,11 @@
   background-image:
     radial-gradient(circle at 1px 1px, #30363D33 1px, transparent 0);
   background-size: 24px 24px;
+}
+
+.light .tactical-grid {
+  background-image:
+    radial-gradient(circle at 1px 1px, #CBD5E122 1px, transparent 0);
 }
 
 /* ── Scanline Effect ── */
@@ -215,6 +232,15 @@
 .glow-border:hover {
   border-color: #00FF9D66;
   box-shadow: 0 0 24px -4px #00FF9D22, inset 0 0 24px -12px #00FF9D11;
+}
+
+.light .glow-border {
+  border: 1px solid #E2E8F0;
+}
+
+.light .glow-border:hover {
+  border-color: #05966644;
+  box-shadow: 0 0 24px -4px #05966616, inset 0 0 24px -12px #05966608;
 }
 
 /* ── GPS Ping ── */
@@ -310,4 +336,21 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #00FF9D44;
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #05966644;
+}
+
+.light .corner-accent::before,
+.light .corner-accent::after {
+  border-color: #05966944;
 }
