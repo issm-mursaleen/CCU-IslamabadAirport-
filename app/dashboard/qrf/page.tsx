@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
+import { useAlerts } from "@/components/alert-context";
+import { useQRF, type IncidentStatus } from "@/components/qrf-context";
 import {
   Crosshair,
   Navigation,
@@ -39,178 +41,7 @@ const TacticalMap = dynamic(() => import("@/components/tactical-map"), {
   ),
 });
 
-/* ── Types ── */
-type IncidentStatus = "pending" | "dispatched" | "on_scene" | "resolved";
-
-type Incident = {
-  id: string;
-  type: string;
-  typeCode: string;
-  description: string;
-  site: string;
-  lat: number;
-  lng: number;
-  reported: string;
-  requiredCap: string;
-  status: IncidentStatus;
-  assignedTeam: string | null;
-};
-
-/* ── Mock QRF teams with GPS coords (Islamabad) ── */
-const initialTeams = [
-  {
-    id: "QRF-A",
-    name: "QRF Alpha",
-    callsign: "ALPHA-1",
-    capabilities: ["armed", "patrol"],
-    vehicle: "Toyota Hilux",
-    personnel: 4,
-    status: "available" as string,
-    lat: 33.7294,
-    lng: 73.0931,
-    sector: "F-6 / F-7",
-    lastUpdate: 45,
-    heading: 135,
-  },
-  {
-    id: "QRF-B",
-    name: "QRF Bravo",
-    callsign: "BRAVO-1",
-    capabilities: ["armed", "k9"],
-    vehicle: "Land Cruiser",
-    personnel: 5,
-    status: "available" as string,
-    lat: 33.6932,
-    lng: 73.0478,
-    sector: "G-8 / G-9",
-    lastUpdate: 120,
-    heading: 45,
-  },
-  {
-    id: "QRF-C",
-    name: "QRF Charlie",
-    callsign: "CHARLIE-1",
-    capabilities: ["armed", "medical"],
-    vehicle: "Hilux (Medical)",
-    personnel: 4,
-    status: "available" as string,
-    lat: 33.6678,
-    lng: 73.0712,
-    sector: "I-8 / I-9",
-    lastUpdate: 30,
-    heading: 270,
-  },
-  {
-    id: "QRF-D",
-    name: "QRF Delta",
-    callsign: "DELTA-1",
-    capabilities: ["armed", "bomb_disposal"],
-    vehicle: "Armoured APC",
-    personnel: 6,
-    status: "available" as string,
-    lat: 33.7156,
-    lng: 73.0623,
-    sector: "E-7 / Blue Area",
-    lastUpdate: 90,
-    heading: 0,
-  },
-  {
-    id: "QRF-E",
-    name: "QRF Echo",
-    callsign: "ECHO-1",
-    capabilities: ["patrol"],
-    vehicle: "Motorcycle Unit",
-    personnel: 3,
-    status: "available" as string,
-    lat: 33.6821,
-    lng: 73.0318,
-    sector: "G-10 / G-11",
-    lastUpdate: 15,
-    heading: 90,
-  },
-];
-
-/* ── Mock Incidents ── */
-const initialIncidents: Incident[] = [
-  {
-    id: "INC-047",
-    type: "Code Amber",
-    typeCode: "amber",
-    description: "Suspicious activity reported near main gate",
-    site: "Site Bravo (F-6 Markaz)",
-    lat: 33.7245,
-    lng: 73.0856,
-    reported: "14:28 PKT",
-    requiredCap: "armed",
-    status: "pending",
-    assignedTeam: null,
-  },
-  {
-    id: "INC-046",
-    type: "Code Red",
-    typeCode: "red",
-    description: "Confirmed intrusion at warehouse perimeter fence — armed response required",
-    site: "Site Delta (I-8 Industrial)",
-    lat: 33.6695,
-    lng: 73.0780,
-    reported: "13:58 PKT",
-    requiredCap: "armed",
-    status: "pending",
-    assignedTeam: null,
-  },
-  {
-    id: "INC-045",
-    type: "Code Blue",
-    typeCode: "blue",
-    description: "Guard medical emergency — collapse at post, requires medical QRF",
-    site: "Site Alpha (Blue Area)",
-    lat: 33.7180,
-    lng: 73.0590,
-    reported: "13:15 PKT",
-    requiredCap: "medical",
-    status: "dispatched",
-    assignedTeam: "QRF-C",
-  },
-  {
-    id: "INC-044",
-    type: "Code Green",
-    typeCode: "green",
-    description: "False alarm verification — motion sensor triggered in empty wing",
-    site: "Site Echo (G-9 Markaz)",
-    lat: 33.6900,
-    lng: 73.0400,
-    reported: "12:40 PKT",
-    requiredCap: "patrol",
-    status: "resolved",
-    assignedTeam: "QRF-E",
-  },
-  {
-    id: "INC-043",
-    type: "Code Amber",
-    typeCode: "amber",
-    description: "Unknown vehicle parked near compound wall for 30+ min",
-    site: "Site Charlie (DHA Phase 2)",
-    lat: 33.7050,
-    lng: 73.0650,
-    reported: "11:22 PKT",
-    requiredCap: "armed",
-    status: "resolved",
-    assignedTeam: "QRF-A",
-  },
-  {
-    id: "INC-042",
-    type: "Code Black",
-    typeCode: "black",
-    description: "Unattended bag found near reception — bomb disposal standby",
-    site: "Site Bravo (F-6 Markaz)",
-    lat: 33.7260,
-    lng: 73.0870,
-    reported: "10:05 PKT",
-    requiredCap: "bomb_disposal",
-    status: "resolved",
-    assignedTeam: "QRF-D",
-  },
-];
+/* Types re-exported from context */
 
 /* ── Haversine distance (km) ── */
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -255,13 +86,12 @@ const typeCodeColors: Record<string, { color: string; bg: string; border: string
 };
 
 export default function QRFPage() {
+  const { addAlert } = useAlerts();
+  const { teams, setTeams, incidents, setIncidents } = useQRF();
   const [mounted, setMounted] = useState(false);
-  const [teams, setTeams] = useState(initialTeams);
-  const [incidents, setIncidents] = useState(initialIncidents);
   const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [incidentFilter, setIncidentFilter] = useState<string>("all");
-  const [gpsTick, setGpsTick] = useState(0);
   const [showManageTeams, setShowManageTeams] = useState(false);
   const [addingTeam, setAddingTeam] = useState(false);
   const [newTeam, setNewTeam] = useState({
@@ -276,22 +106,6 @@ export default function QRFPage() {
   });
 
   useEffect(() => setMounted(true), []);
-
-  /* simulate GPS coordinate drift */
-  useEffect(() => {
-    const id = setInterval(() => {
-      setGpsTick((t) => t + 1);
-      setTeams((prev) =>
-        prev.map((t) => ({
-          ...t,
-          lat: t.lat + (Math.random() - 0.5) * 0.0008,
-          lng: t.lng + (Math.random() - 0.5) * 0.0008,
-          lastUpdate: Math.max(0, t.lastUpdate - 2 + Math.floor(Math.random() * 5)),
-        }))
-      );
-    }, 3000);
-    return () => clearInterval(id);
-  }, []);
 
   const activeIncident = incidents.find((inc) => inc.id === selectedIncident) || null;
 
@@ -311,11 +125,15 @@ export default function QRFPage() {
 
   const handleDispatch = useCallback(() => {
     if (!selectedTeam || !selectedIncident) return;
+    const inc = incidents.find((i) => i.id === selectedIncident);
+    const team = teams.find((t) => t.id === selectedTeam);
+    if (!inc || !team) return;
+
     setIncidents((prev) =>
-      prev.map((inc) =>
-        inc.id === selectedIncident
-          ? { ...inc, status: "dispatched" as IncidentStatus, assignedTeam: selectedTeam }
-          : inc
+      prev.map((i) =>
+        i.id === selectedIncident
+          ? { ...i, status: "dispatched" as IncidentStatus, assignedTeam: selectedTeam }
+          : i
       )
     );
     setTeams((prev) =>
@@ -323,7 +141,27 @@ export default function QRFPage() {
         t.id === selectedTeam ? { ...t, status: "en_route" } : t
       )
     );
-  }, [selectedTeam, selectedIncident]);
+
+    // Auto-alert: notify Duty Manager about dispatch
+    addAlert({
+      type: "incident",
+      priority: inc.typeCode === "red" || inc.typeCode === "black" ? "critical" : "high",
+      recipient: "Duty Manager",
+      recipientPhone: "+92 300 1234567",
+      message: `DISPATCH: ${inc.id} — ${inc.type} at ${inc.site}. ${team.name} (${team.callsign}) dispatched. ETA ${Math.round((haversine(team.lat, team.lng, inc.lat, inc.lng) / 40) * 60)} min.`,
+      triggeredBy: "MOD-01 (QRF Auto)",
+    });
+
+    // Auto-alert: notify team lead
+    addAlert({
+      type: "incident",
+      priority: inc.typeCode === "red" || inc.typeCode === "black" ? "critical" : "high",
+      recipient: `${team.callsign} Lead`,
+      recipientPhone: "+92 301 XXXXXXX",
+      message: `RESPOND: ${inc.id} at ${inc.site}. ${inc.description}. Respond immediately.`,
+      triggeredBy: "MOD-01 (QRF Auto)",
+    });
+  }, [selectedTeam, selectedIncident, incidents, teams, addAlert]);
 
   const handleResolve = useCallback(() => {
     if (!selectedIncident) return;
@@ -345,7 +183,17 @@ export default function QRFPage() {
       );
     }
     setSelectedTeam(null);
-  }, [selectedIncident, incidents]);
+
+    // Auto-alert: notify about resolution
+    addAlert({
+      type: "incident",
+      priority: "normal",
+      recipient: "Duty Manager",
+      recipientPhone: "+92 300 1234567",
+      message: `RESOLVED: ${inc.id} — ${inc.type} at ${inc.site} has been resolved. ${inc.assignedTeam ? `Team ${inc.assignedTeam} released back to available.` : ""}`,
+      triggeredBy: "MOD-01 (QRF Auto)",
+    });
+  }, [selectedIncident, incidents, addAlert]);
 
   const handleAddTeam = useCallback(() => {
     if (!newTeam.name || !newTeam.callsign) return;
@@ -557,7 +405,7 @@ export default function QRFPage() {
             </div>
             <div className="flex items-center gap-3">
               <span className="font-mono text-[9px] text-muted-foreground">
-                GPS TICK #{gpsTick}
+                GPS LIVE
               </span>
               <Signal className="h-3 w-3 text-tactical-green blink" />
             </div>
@@ -961,7 +809,7 @@ export default function QRFPage() {
                       className="w-full px-3 py-2 rounded-md bg-card border border-border text-xs font-mono placeholder:text-muted-foreground/40 focus:border-tactical-green/50 focus:outline-none"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <label className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider block mb-1">
                       Sector
                     </label>
@@ -972,27 +820,6 @@ export default function QRFPage() {
                       placeholder="e.g. F-8 / F-9"
                       className="w-full px-3 py-2 rounded-md bg-card border border-border text-xs font-mono placeholder:text-muted-foreground/40 focus:border-tactical-green/50 focus:outline-none"
                     />
-                  </div>
-                  <div>
-                    <label className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider block mb-1">
-                      GPS Position
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newTeam.lat}
-                        onChange={(e) => setNewTeam((p) => ({ ...p, lat: e.target.value }))}
-                        placeholder="Lat"
-                        className="w-1/2 px-3 py-2 rounded-md bg-card border border-border text-xs font-mono placeholder:text-muted-foreground/40 focus:border-tactical-green/50 focus:outline-none"
-                      />
-                      <input
-                        type="text"
-                        value={newTeam.lng}
-                        onChange={(e) => setNewTeam((p) => ({ ...p, lng: e.target.value }))}
-                        placeholder="Lng"
-                        className="w-1/2 px-3 py-2 rounded-md bg-card border border-border text-xs font-mono placeholder:text-muted-foreground/40 focus:border-tactical-green/50 focus:outline-none"
-                      />
-                    </div>
                   </div>
                   <div className="col-span-2">
                     <label className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider block mb-1.5">

@@ -38,21 +38,26 @@ const initialActiveDeployments = [
   { id: "DEP-006", guard: "Bilal Khan", guardId: "G-002", post: "Back Gate", site: "Site Charlie (DHA Phase 2)", shift: "14:00 — 22:00", status: "warning", compliance: "expiring_soon", training: "complete" },
 ];
 
-const initialReservePool = initialGuards.map((g, i) => ({
-  id: g.id,
-  name: g.name,
-  capabilities: g.certifications.map(c => {
+const initialReservePool = initialGuards.map((g, i) => {
+  const mappedCaps = g.certifications.map(c => {
     if (c === "Armed Response") return "AR";
     if (c === "First Aid") return "FA";
     if (c === "Fire Safety") return "FS";
     if (c === "K9 Handling") return "K9";
     if (c === "VIP Protection") return "VIP";
+    if (c === "CCTV") return "CCTV";
     return "AC"; // generic fallback
-  }),
-  distance: (2.3 + (i * 0.7)).toFixed(1) + " km",
-  available: g.status !== "expired",
-  compliance: g.status,
-}));
+  });
+
+  return {
+    id: g.id,
+    name: g.name,
+    capabilities: Array.from(new Set(mappedCaps)),
+    distance: (2.3 + (i * 0.7)).toFixed(1) + " km",
+    available: g.status !== "expired",
+    compliance: g.status,
+  };
+});
 
 const initialHandoverLogs = [
   { time: "13:55", post: "Main Gate", outgoing: "Faraz Ali", incoming: "Ali Hassan", site: "Site Alpha", reason: "Shift change", operator: "OP-01" },
@@ -408,8 +413,8 @@ export default function DeploymentPage() {
                             <span className="font-mono text-[10px] text-tactical-cyan">{guard.distance}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            {guard.capabilities.map((c) => (
-                              <span key={c} className="font-mono text-[8px] px-1 py-0.5 rounded bg-accent/50 text-muted-foreground">{c}</span>
+                            {guard.capabilities.map((c, idx) => (
+                              <span key={`${c}-${idx}`} className="font-mono text-[8px] px-1 py-0.5 rounded bg-accent/50 text-muted-foreground">{c}</span>
                             ))}
                             <span className={`ml-auto font-mono text-[8px] tracking-widest ${guard.available ? "text-[#A78BFA] font-bold" : "text-muted-foreground"}`}>
                               {guard.available ? "DEPLOY NOW" : "DEPLOYED"}

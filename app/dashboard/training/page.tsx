@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useAlerts } from "@/components/alert-context";
 import {
   GraduationCap,
   Search,
@@ -60,6 +61,7 @@ const statusConfig: Record<string, { color: string; bg: string; border: string; 
 };
 
 export default function TrainingPage() {
+  const { addAlert } = useAlerts();
   const [mounted, setMounted] = useState(false);
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -67,7 +69,31 @@ export default function TrainingPage() {
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const alertsSentRef = useRef(false);
   useEffect(() => setMounted(true), []);
+
+  /* Auto-alert for expiring/expired training certs on first load */
+  useEffect(() => {
+    if (alertsSentRef.current) return;
+    alertsSentRef.current = true;
+
+    const flagged = initialTrainingRecords.filter((r) => r.status === "expiring" || r.status === "expired");
+    const typeLookup: Record<string, string> = {};
+    trainingTypes.forEach((t) => { typeLookup[t.code] = t.name; });
+
+    flagged.forEach((r) => {
+      addAlert({
+        type: "training",
+        priority: r.status === "expired" ? "high" : "normal",
+        recipient: "Training Admin",
+        recipientPhone: "+92 321 4445566",
+        message: r.status === "expired"
+          ? `TRAINING EXPIRED: ${r.guardName} (${r.guardId}) — ${typeLookup[r.type] || r.type} cert ${r.certNo} expired ${r.expiry}. Schedule re-training.`
+          : `TRAINING EXPIRING: ${r.guardName} (${r.guardId}) — ${typeLookup[r.type] || r.type} cert ${r.certNo} expires ${r.expiry}. Plan renewal.`,
+        triggeredBy: "MOD-03 (Training Auto)",
+      });
+    });
+  }, [addAlert]);
 
   const handleVerifyCert = (recordId: string) => {
     setRecords(records.map(r => {

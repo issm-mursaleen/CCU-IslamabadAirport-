@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useAlerts } from "@/components/alert-context";
 import {
   ShieldCheck,
   Search,
@@ -45,6 +46,7 @@ const statusConfig: Record<string, { color: string; bg: string; border: string; 
 };
 
 export default function CompliancePage() {
+  const { addAlert } = useAlerts();
   const [mounted, setMounted] = useState(false);
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -52,7 +54,28 @@ export default function CompliancePage() {
   const [selectedGuard, setSelectedGuard] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const alertsSentRef = useRef(false);
   useEffect(() => setMounted(true), []);
+
+  /* Auto-alert for expiring/expired guards on first load */
+  useEffect(() => {
+    if (alertsSentRef.current) return;
+    alertsSentRef.current = true;
+
+    const flagged = initialGuards.filter((g) => g.status === "expiring_soon" || g.status === "expired");
+    flagged.forEach((g) => {
+      addAlert({
+        type: "compliance",
+        priority: g.status === "expired" ? "critical" : "high",
+        recipient: "Admin Officer",
+        recipientPhone: "+92 333 4567890",
+        message: g.status === "expired"
+          ? `EXPIRED: Guard ${g.name} (${g.id}) licence ${g.licence} expired on ${g.expiry}. Immediate action required.`
+          : `EXPIRING: Guard ${g.name} (${g.id}) licence ${g.licence} expires ${g.expiry}. Schedule renewal.`,
+        triggeredBy: "MOD-02 (Compliance Auto)",
+      });
+    });
+  }, [addAlert]);
 
   const handleRenewAuth = (guardId: string) => {
     setGuards(guards.map(g => {
