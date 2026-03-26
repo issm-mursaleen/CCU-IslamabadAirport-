@@ -1,269 +1,330 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { 
-  Activity, 
-  DashboardStats, 
-  getDashboardStats, 
-  getRecentActivity 
-} from "@/services/api";
-import { 
-  Plus, 
-  Download, 
-  TrendingUp, 
-  Users, 
-  CreditCard, 
-  Activity as ActivityIcon,
-  Loader2
+import Link from "next/link";
+import {
+  Crosshair,
+  ShieldCheck,
+  GraduationCap,
+  Users,
+  Bell,
+  Bot,
+  ArrowUpRight,
+  Activity,
+  Shield,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
+const modules = [
+  {
+    id: "MOD-01",
+    title: "QRF Response",
+    subtitle: "Threat Response & GPS Tracking",
+    description:
+      "Real-time GPS tracking of QRF teams. Haversine-ranked dispatch by distance and capability.",
+    icon: Crosshair,
+    href: "/dashboard/qrf",
+    accentColor: "text-tactical-green",
+    accentBg: "bg-tactical-green/10",
+    accentBorder: "border-tactical-green/30",
+    status: "LIVE",
+    stats: { label: "Teams Active", value: "5" },
+  },
+  {
+    id: "MOD-02",
+    title: "Guard Compliance",
+    subtitle: "License & Certification Tracking",
+    description:
+      "Tracks guard licences, CNIC validity, and certifications. Auto-blocks expired guards.",
+    icon: ShieldCheck,
+    href: "/dashboard/compliance",
+    accentColor: "text-tactical-cyan",
+    accentBg: "bg-tactical-cyan/10",
+    accentBorder: "border-tactical-cyan/30",
+    status: "ACTIVE",
+    stats: { label: "Compliance Rate", value: "94%" },
+  },
+  {
+    id: "MOD-03",
+    title: "Training Mgmt",
+    subtitle: "Certification & Eligibility",
+    description:
+      "Training records per guard. Eligibility filtering by post requirements. Expiry alerts.",
+    icon: GraduationCap,
+    href: "/dashboard/training",
+    accentColor: "text-tactical-amber",
+    accentBg: "bg-tactical-amber/10",
+    accentBorder: "border-tactical-amber/30",
+    status: "ACTIVE",
+    stats: { label: "Fully Trained", value: "87%" },
+  },
+  {
+    id: "MOD-04",
+    title: "Deployment",
+    subtitle: "Guard Deployment & Reserve Pool",
+    description:
+      "Live deployment board with reserve pool. Quick like-for-like replacement and handover logs.",
+    icon: Users,
+    href: "/dashboard/deployment",
+    accentColor: "text-[#A78BFA]",
+    accentBg: "bg-[#A78BFA]/10",
+    accentBorder: "border-[#A78BFA]/30",
+    status: "ACTIVE",
+    stats: { label: "Guards Deployed", value: "40" },
+  },
+  {
+    id: "MOD-05",
+    title: "Alert System",
+    subtitle: "WhatsApp Notifications & Escalation",
+    description:
+      "Automated alerts via WhatsApp. Delivery tracking, read receipts, and escalation chains.",
+    icon: Bell,
+    href: "/dashboard/alerts",
+    accentColor: "text-tactical-red",
+    accentBg: "bg-tactical-red/10",
+    accentBorder: "border-tactical-red/30",
+    status: "ACTIVE",
+    stats: { label: "Alerts Today", value: "12" },
+  },
+  {
+    id: "MOD-06",
+    title: "AI Assistant",
+    subtitle: "Natural Language Ops Intelligence",
+    description:
+      "Query system data in plain English. Proactive suggestions during active incidents.",
+    icon: Bot,
+    href: "/dashboard/ai-assistant",
+    accentColor: "text-tactical-green",
+    accentBg: "bg-tactical-green/10",
+    accentBorder: "border-tactical-green/30",
+    status: "READY",
+    stats: { label: "Queries Today", value: "34" },
+  },
+];
+
+const recentActivity = [
+  {
+    time: "14:32",
+    type: "incident",
+    message: "INC-047: Code Amber at Site Bravo — QRF Bravo dispatched",
+    icon: AlertTriangle,
+    color: "text-tactical-amber",
+  },
+  {
+    time: "14:28",
+    type: "compliance",
+    message: "Guard Bilal Khan — licence expires in 12 days",
+    icon: Clock,
+    color: "text-tactical-amber",
+  },
+  {
+    time: "14:15",
+    type: "deployment",
+    message: "Guard rotation completed at Site Alpha — no coverage gap",
+    icon: CheckCircle2,
+    color: "text-tactical-green",
+  },
+  {
+    time: "13:58",
+    type: "alert",
+    message: "Escalation: INC-046 alert unread after 5 min — sent to supervisor",
+    icon: AlertTriangle,
+    color: "text-tactical-red",
+  },
+  {
+    time: "13:42",
+    type: "qrf",
+    message: "QRF Alpha back to available — INC-046 marked SECURE",
+    icon: CheckCircle2,
+    color: "text-tactical-green",
+  },
+];
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const [statsData, activityData] = await Promise.all([
-        getDashboardStats(),
-        getRecentActivity()
-      ]);
-      setStats(statsData);
-      setActivities(activityData);
-    } catch (error) {
-      console.error("Failed to fetch dashboard data", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchData();
-    setIsRefreshing(false);
-  };
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   return (
-    <main className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-end justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">Welcome back, admin. Here's what's happening today.</p>
+          <h1 className="text-2xl font-bold tracking-tight font-sans">
+            Command Center
+          </h1>
+          <p className="text-sm text-muted-foreground font-mono mt-1">
+            ISSM Security Operations — All Modules Overview
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
-             {isRefreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TrendingUp className="mr-2 h-4 w-4" />}
-             Refresh
-          </Button>
-          <AddUserModal />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-tactical-green-dim border border-tactical-green/20">
+            <Activity className="h-3.5 w-3.5 text-tactical-green" />
+            <span className="font-mono text-[11px] text-tactical-green tracking-wide">
+              ALL SYSTEMS NOMINAL
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard 
-          title="Total Revenue" 
-          value={stats?.totalRevenue} 
-          description="+20.1% from last month" 
-          icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
-          loading={isLoading}
-        />
-        <StatCard 
-          title="Active Users" 
-          value={stats?.activeUsers} 
-          description="+180.1% from last month" 
-          icon={<Users className="h-4 w-4 text-muted-foreground" />}
-          loading={isLoading}
-        />
-        <StatCard 
-          title="Subscriptions" 
-          value={stats?.newSubscriptions} 
-          description="+19% from last month" 
-          icon={<ActivityIcon className="h-4 w-4 text-muted-foreground" />}
-          loading={isLoading}
-        />
-        <StatCard 
-          title="Active Now" 
-          value={stats?.churnRate} 
-          description="+201 since last hour" 
-          icon={<ActivityIcon className="h-4 w-4 text-muted-foreground" />}
-          loading={isLoading}
-        />
-      </div>
-
-      {/* Activity Table */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 shadow-sm border-none bg-white">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>You made 265 sales this month.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-               <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activities.map((activity) => (
-                    <TableRow key={activity.id}>
-                      <TableCell>
-                        <div className="font-medium">{activity.user}</div>
-                        <div className="text-sm text-muted-foreground hidden md:inline">{activity.email}</div>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                          activity.status === "success" ? "bg-green-50 text-green-700 border-green-200" :
-                          activity.status === "pending" ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-                          "bg-red-50 text-red-700 border-red-200"
-                        }`}>
-                          {activity.status.charAt(0).toUpperCase() + activity.status.slice(1)}
-                        </span>
-                      </TableCell>
-                      <TableCell>{activity.date}</TableCell>
-                      <TableCell className="text-right font-semibold">{activity.amount}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions / Chart Mockup */}
-        <Card className="col-span-3 shadow-sm border-none bg-blue-50/50">
-          <CardHeader>
-            <CardTitle>Overview</CardTitle>
-            <CardDescription>Your analytics at a glance.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-6">
-            <div className="h-[200px] w-full flex items-end gap-2 px-2">
-               <div className="bg-blue-600 w-full h-[40%] rounded-t-sm animate-pulse"></div>
-               <div className="bg-blue-500 w-full h-[70%] rounded-t-sm animate-pulse delay-75"></div>
-               <div className="bg-blue-400 w-full h-[55%] rounded-t-sm animate-pulse delay-100"></div>
-               <div className="bg-blue-600 w-full h-[90%] rounded-t-sm animate-pulse delay-150"></div>
-               <div className="bg-blue-500 w-full h-[30%] rounded-t-sm animate-pulse delay-200"></div>
-               <div className="bg-blue-400 w-full h-[65%] rounded-t-sm animate-pulse delay-300"></div>
+      {/* Stats bar */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          {
+            label: "Active Incidents",
+            value: "2",
+            icon: AlertTriangle,
+            color: "text-tactical-amber",
+            bg: "bg-tactical-amber-dim",
+          },
+          {
+            label: "QRF Teams Online",
+            value: "5/5",
+            icon: Crosshair,
+            color: "text-tactical-green",
+            bg: "bg-tactical-green-dim",
+          },
+          {
+            label: "Guards on Duty",
+            value: "40",
+            icon: Shield,
+            color: "text-tactical-cyan",
+            bg: "bg-tactical-cyan-dim",
+          },
+          {
+            label: "Alerts Sent (24h)",
+            value: "12",
+            icon: Bell,
+            color: "text-tactical-red",
+            bg: "bg-tactical-red-dim",
+          },
+        ].map((stat, i) => (
+          <div
+            key={stat.label}
+            className={`glow-border rounded-lg p-4 bg-card noise-texture ${
+              mounted ? "fade-in-up" : "opacity-0"
+            }`}
+            style={{ animationDelay: `${i * 80}ms` }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground uppercase">
+                {stat.label}
+              </span>
+              <div className={`p-1.5 rounded-md ${stat.bg}`}>
+                <stat.icon className={`h-3.5 w-3.5 ${stat.color}`} />
+              </div>
             </div>
-            <div className="space-y-4">
-              <h4 className="text-sm font-semibold">Weekly Summary</h4>
-              <p className="text-sm text-muted-foreground">
-                This week you&apos;ve increased your user retention by <span className="text-green-600 font-bold">12.5%</span>. 
-                Keep it up to reach your monthly goal.
+            <p className={`text-2xl font-bold font-mono mt-2 ${stat.color}`}>
+              {stat.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Module Grid */}
+      <div>
+        <h2 className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase mb-3">
+          System Modules
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {modules.map((mod, i) => (
+            <Link
+              key={mod.id}
+              href={mod.href}
+              className={`group glow-border corner-accent rounded-lg p-5 bg-card noise-texture block transition-all hover:translate-y-[-2px] ${
+                mounted ? "fade-in-up" : "opacity-0"
+              }`}
+              style={{
+                animationDelay: `${300 + i * 100}ms`,
+                borderColor: "var(--border)",
+              }}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`p-2 rounded-md ${mod.accentBg} border ${mod.accentBorder}`}
+                  >
+                    <mod.icon className={`h-4 w-4 ${mod.accentColor}`} />
+                  </div>
+                  <div>
+                    <p className="font-mono text-[10px] text-muted-foreground tracking-wider">
+                      {mod.id}
+                    </p>
+                    <h3 className="font-semibold text-sm tracking-tight">
+                      {mod.title}
+                    </h3>
+                  </div>
+                </div>
+                <span
+                  className={`font-mono text-[9px] tracking-wider px-1.5 py-0.5 rounded border ${
+                    mod.status === "LIVE"
+                      ? "text-tactical-green bg-tactical-green/10 border-tactical-green/30 blink"
+                      : "text-muted-foreground bg-muted/50 border-border"
+                  }`}
+                >
+                  {mod.status}
+                </span>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground font-mono leading-relaxed mb-4">
+                {mod.description}
               </p>
-              <Button className="w-full bg-blue-600">View Detailed Report</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </main>
-  );
-}
 
-function StatCard({ title, value, description, icon, loading }: { 
-  title: string, 
-  value?: string, 
-  description: string, 
-  icon: React.ReactNode,
-  loading: boolean
-}) {
-  return (
-    <Card className="shadow-sm border-none">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <Skeleton className="h-8 w-24 mb-1" />
-        ) : (
-          <div className="text-2xl font-bold">{value}</div>
-        )}
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function AddUserModal() {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button size="sm" className="bg-blue-600">
-          <Plus className="mr-2 h-4 w-4" />
-          Add User
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
-          <DialogDescription>
-            Create a new user account here. Click save when you're done.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">Name</Label>
-            <Input id="name" value="Pedro Duarte" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="username" className="text-right">Username</Label>
-            <Input id="username" value="@peduarte" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">Email</Label>
-            <Input id="email" type="email" value="pedro@duarte.com" className="col-span-3" />
-          </div>
+              <div className="flex items-center justify-between pt-3 border-t border-border/50">
+                <div>
+                  <p className="font-mono text-[9px] text-muted-foreground tracking-wider uppercase">
+                    {mod.stats.label}
+                  </p>
+                  <p
+                    className={`font-mono text-lg font-bold ${mod.accentColor}`}
+                  >
+                    {mod.stats.value}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground group-hover:text-tactical-green transition-colors">
+                  <span className="font-mono text-[10px] tracking-wide">
+                    OPEN
+                  </span>
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
-        <DialogFooter>
-          <Button type="submit" className="bg-blue-600">Save changes</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+
+      {/* Recent Activity */}
+      <div>
+        <h2 className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase mb-3">
+          Live Activity Feed
+        </h2>
+        <div
+          className={`glow-border rounded-lg bg-card noise-texture overflow-hidden ${
+            mounted ? "fade-in-up" : "opacity-0"
+          }`}
+          style={{ animationDelay: "900ms" }}
+        >
+          {recentActivity.map((item, i) => (
+            <div
+              key={i}
+              className={`flex items-start gap-3 px-4 py-3 ${
+                i !== recentActivity.length - 1
+                  ? "border-b border-border/40"
+                  : ""
+              } hover:bg-accent/30 transition-colors`}
+            >
+              <span className="font-mono text-[11px] text-muted-foreground tabular-nums w-11 shrink-0 pt-0.5">
+                {item.time}
+              </span>
+              <item.icon className={`h-4 w-4 ${item.color} shrink-0 mt-0.5`} />
+              <p className="font-mono text-[11px] text-foreground/80 leading-relaxed">
+                {item.message}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
