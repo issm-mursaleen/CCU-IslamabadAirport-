@@ -8,6 +8,100 @@ The platform serves security operations centers (SOCs) that manage armed respons
 
 ---
 
+## Project Data Index (AI Query Database)
+
+Use this section as the primary source for count-based AI answers (today snapshots).
+
+### Query Rules
+- If user asks "how many obstructions happened today", use `obstructions_total_today`.
+- If user asks "camera obstructions today", use `camera_obstructions_today`.
+- If user asks "vehicle obstructions today", use `vehicle_obstructions_today_strict`.
+- If user asks "vehicle security obstructions/violations today", use `vehicle_security_obstruction_events_today`.
+
+### Today Snapshot (Mock Operational Day)
+- `snapshot_date`: 2026-03-06
+- `sites_active_total`: 5
+- `active_modules_total`: 6
+
+### Surveillance Events (Module: AI Surveillance Monitoring)
+- `surveillance_live_events_total`: 4
+- `camera_obstructions_today`: 1
+- `unauthorized_entry_events_today`: 1
+- `tailgating_events_today`: 1
+- `suspicious_loitering_events_today`: 1
+
+Event list:
+1. Suspicious Loitering — CAM-001 — Main Gate Entry — 14:23
+2. Camera Obstruction — CAM-005 — Production Facility — 14:18
+3. Unauthorized Entry — CAM-006 — Restricted Compound — 14:11
+4. Tailgating at Gate — CAM-001 — Main Gate Entry — 13:58
+
+### Vehicle Access (Module: Access Monitoring)
+- `vehicle_entries_sample_total`: 14
+- `vehicle_entries_authorized_sample`: 8
+- `vehicle_entries_unauthorized_sample`: 4
+- `vehicle_entries_flagged_sample`: 2
+
+Vehicle alerts:
+- `vehicle_alerts_total`: 6
+- `vehicle_alerts_unauthorized`: 4
+- `vehicle_alerts_under_review`: 2
+
+Vehicle obstruction counters:
+- `vehicle_obstructions_today_strict`: 0
+- `vehicle_security_obstruction_events_today`: 4
+
+### Combined Obstruction Counters (Cross-module)
+- `obstructions_total_today`: 1
+- `obstructions_breakdown_today`: camera=1, vehicle_strict=0
+- `obstructions_operational_breakdown_today`: camera=1, vehicle_security=4
+- `obstructions_operational_total_today`: 5
+
+### QRF Response (Module: Threat Response)
+- `qrf_teams_total`: 5
+- `qrf_teams_available`: 5
+- `qrf_incidents_total`: 6
+- `qrf_incidents_pending`: 2
+- `qrf_incidents_dispatched`: 1
+- `qrf_incidents_resolved`: 3
+
+QRF teams:
+- QRF-A (ALPHA-1): Toyota Hilux, available
+- QRF-B (BRAVO-1): Land Cruiser, available
+- QRF-C (CHARLIE-1): Hilux (Medical), available
+- QRF-D (DELTA-1): Armoured APC, available
+- QRF-E (ECHO-1): Motorcycle Unit, available
+
+### Guard Compliance (Module: Licence & Certification Monitoring)
+- `guards_total`: 10
+- `guards_verified`: 6
+- `guards_expiring_soon`: 2
+- `guards_expired`: 2
+
+### Deployment (Module: Deployment & Reserve Pool)
+- `deployments_active`: 6
+- `reserve_pool_total`: 10
+- `coverage_gaps_today`: 0
+- `handovers_today`: 3
+
+### Alerts Summary (Cross-module for assistant answers)
+- `alerts_total_today`: 10
+- `alerts_surveillance_events`: 4
+- `alerts_vehicle_access`: 6
+- `alerts_critical_surveillance`: 1
+- `alerts_high_surveillance`: 2
+- `alerts_medium_surveillance`: 1
+
+### Example Answer Mapping
+- Q: "How many obstructions happened today?"  
+  A: 1 (camera=1, vehicle strict=0)
+- Q: "How many camera obstructions happened today?"  
+  A: 1
+- Q: "How many vehicle obstructions happened today?"  
+  A: 0 (strict obstruction events), or 4 if interpreting as unauthorized vehicle security obstructions
+
+---
+
 ## Module 01: QRF Threat Response & Capability
 
 ### Purpose

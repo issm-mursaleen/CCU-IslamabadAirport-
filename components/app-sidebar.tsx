@@ -8,6 +8,7 @@ import {
   Bell,
   Bot,
   LayoutDashboard,
+  Map,
   Settings,
   LogOut,
   Radio,
@@ -15,6 +16,8 @@ import {
   Moon,
   Cctv,
   Car,
+  BarChart3,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -68,6 +71,11 @@ const data = {
       icon: Crosshair,
     },
     {
+      title: "Perimeter Map",
+      url: "/dashboard/perimeter-map",
+      icon: Map,
+    },
+    {
       title: "Guard Compliance",
       url: "/dashboard/compliance",
       icon: ShieldCheck,
@@ -86,6 +94,11 @@ const data = {
       title: "Alert System",
       url: "/dashboard/alerts",
       icon: Bell,
+    },
+    {
+      title: "Threat Intel",
+      url: "/dashboard/analytics",
+      icon: AlertTriangle,
     },
     {
       title: "AI Assistant",

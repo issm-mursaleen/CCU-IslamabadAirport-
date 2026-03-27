@@ -59,9 +59,11 @@ export default function VehicleAccessPage() {
 
   const filteredEntries = VEHICLE_ENTRIES.filter((entry) => {
     const matchesFilter = filter === "all" || entry.status === filter;
+    const normalizedSearch = search.toLowerCase();
     const matchesSearch =
-      entry.driver.toLowerCase().includes(search.toLowerCase()) ||
-      entry.purpose.toLowerCase().includes(search.toLowerCase());
+      entry.driver.toLowerCase().includes(normalizedSearch) ||
+      entry.purpose.toLowerCase().includes(normalizedSearch) ||
+      entry.plate.toLowerCase().includes(normalizedSearch);
     return matchesFilter && matchesSearch;
   });
 
@@ -165,7 +167,7 @@ export default function VehicleAccessPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Driver or driver..."
+                placeholder="Search Plat No or Driver"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-background/50 border border-border/60 rounded-md pl-9 pr-3 py-1.5 text-xs font-mono focus:outline-none focus:border-tactical-cyan/50 transition-colors"
