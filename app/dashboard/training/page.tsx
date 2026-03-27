@@ -436,7 +436,7 @@ export default function TrainingPage() {
                         </div>
                       </div>
                       <div className="mt-4 flex justify-between items-center text-xs font-mono text-muted-foreground">
-                        <span>SCAN_ID: TS-{Math.floor(Math.random() * 10000) + 1000}-{selectedRecord.guardId}</span>
+                        <span>SCAN_ID: TS-{selectedRecord.certNo}-{selectedRecord.guardId}</span>
                         <button className="text-tactical-amber hover:text-tactical-amber/80 flex items-center gap-1">
                           <Download className="h-3 w-3" /> Export PDF
                         </button>

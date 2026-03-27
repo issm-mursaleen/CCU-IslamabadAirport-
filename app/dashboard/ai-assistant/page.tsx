@@ -34,11 +34,8 @@ export default function AIAssistantPage() {
       role: "system",
       content:
         "ISSM AI Assistant initialized. Connected to security operations knowledge base. Ready to answer queries about QRF teams, guard compliance, training, deployments, and alerts.",
-      timestamp: new Date().toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }),
+      // Keep SSR/CSR output deterministic to avoid hydration mismatch.
+      timestamp: "--:--:--",
     },
   ]);
   const [input, setInput] = useState("");
