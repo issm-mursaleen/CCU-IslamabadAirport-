@@ -16,6 +16,8 @@ import {
   Moon,
   Cctv,
   Car,
+  BarChart3,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -92,6 +94,11 @@ const data = {
       title: "Alert System",
       url: "/dashboard/alerts",
       icon: Bell,
+    },
+    {
+      title: "Threat Intel",
+      url: "/dashboard/analytics",
+      icon: AlertTriangle,
     },
     {
       title: "AI Assistant",
