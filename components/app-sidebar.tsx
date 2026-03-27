@@ -8,6 +8,7 @@ import {
   Bell,
   Bot,
   LayoutDashboard,
+  Map,
   Settings,
   LogOut,
   Radio,
@@ -66,6 +67,11 @@ const data = {
       title: "QRF Response",
       url: "/dashboard/qrf",
       icon: Crosshair,
+    },
+    {
+      title: "Perimeter Map",
+      url: "/dashboard/perimeter-map",
+      icon: Map,
     },
     {
       title: "Guard Compliance",

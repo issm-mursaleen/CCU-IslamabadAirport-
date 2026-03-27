@@ -30,12 +30,12 @@ import { useRef } from "react";
 import { initialGuards } from "../compliance/page";
 
 const initialActiveDeployments = [
-  { id: "DEP-001", guard: "Ali Hassan", guardId: "G-001", post: "Main Gate", site: "Site Alpha (Blue Area)", shift: "06:00 — 14:00", status: "active", compliance: "verified", training: "complete" },
-  { id: "DEP-002", guard: "Imran Malik", guardId: "G-005", post: "Perimeter Patrol", site: "Site Alpha (Blue Area)", shift: "06:00 — 14:00", status: "active", compliance: "verified", training: "complete" },
-  { id: "DEP-003", guard: "Tariq Mehmood", guardId: "G-006", post: "Reception Desk", site: "Site Bravo (F-6 Markaz)", shift: "08:00 — 16:00", status: "active", compliance: "verified", training: "complete" },
-  { id: "DEP-004", guard: "Naveed Shah", guardId: "G-007", post: "CCTV Room", site: "Site Bravo (F-6 Markaz)", shift: "08:00 — 16:00", status: "active", compliance: "verified", training: "complete" },
-  { id: "DEP-005", guard: "Kamran Yousuf", guardId: "G-009", post: "VIP Gate", site: "Site Delta (I-8 Industrial)", shift: "06:00 — 18:00", status: "active", compliance: "verified", training: "complete" },
-  { id: "DEP-006", guard: "Bilal Khan", guardId: "G-002", post: "Back Gate", site: "Site Charlie (DHA Phase 2)", shift: "14:00 — 22:00", status: "warning", compliance: "expiring_soon", training: "complete" },
+  { id: "DEP-001", guard: "Ali Hassan", guardId: "G-001", post: "Main Gate", site: "Site Alpha (Blue Area)", shift: "06:00 — 14:00", status: "active", guardStatus: "on_duty", compliance: "verified", training: "complete" },
+  { id: "DEP-002", guard: "Imran Malik", guardId: "G-005", post: "Perimeter Patrol", site: "Site Alpha (Blue Area)", shift: "06:00 — 14:00", status: "active", guardStatus: "on_duty", compliance: "verified", training: "complete" },
+  { id: "DEP-003", guard: "Tariq Mehmood", guardId: "G-006", post: "Reception Desk", site: "Site Bravo (F-6 Markaz)", shift: "08:00 — 16:00", status: "active", guardStatus: "on_duty", compliance: "verified", training: "complete" },
+  { id: "DEP-004", guard: "Naveed Shah", guardId: "G-007", post: "CCTV Room", site: "Site Bravo (F-6 Markaz)", shift: "08:00 — 16:00", status: "active", guardStatus: "off_duty", compliance: "verified", training: "complete" },
+  { id: "DEP-005", guard: "Kamran Yousuf", guardId: "G-009", post: "VIP Gate", site: "Site Delta (I-8 Industrial)", shift: "06:00 — 18:00", status: "active", guardStatus: "on_duty", compliance: "verified", training: "complete" },
+  { id: "DEP-006", guard: "Bilal Khan", guardId: "G-002", post: "Back Gate", site: "Site Charlie (DHA Phase 2)", shift: "14:00 — 22:00", status: "warning", guardStatus: "alert", compliance: "expiring_soon", training: "complete" },
 ];
 
 const initialReservePool = initialGuards.map((g, i) => {
@@ -75,6 +75,12 @@ export default function DeploymentPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => setMounted(true), []);
 
+  const guardStatusConfig: Record<string, { label: string; color: string; bg: string; border: string }> = {
+    on_duty: { label: "On Duty", color: "text-tactical-green", bg: "bg-tactical-green/10", border: "border-tactical-green/30" },
+    alert: { label: "Alert", color: "text-tactical-amber", bg: "bg-tactical-amber/10", border: "border-tactical-amber/30" },
+    off_duty: { label: "Off Duty", color: "text-muted-foreground", bg: "bg-muted/40", border: "border-border/60" },
+  };
+
   const handleDeployStaff = (guard: any, post: string, site: string, shift: string) => {
     // Mark reserve as not available
     setReserves(reserves.map(r => r.id === guard.id ? { ...r, available: false } : r));
@@ -88,6 +94,7 @@ export default function DeploymentPage() {
       site,
       shift,
       status: "active",
+      guardStatus: "on_duty",
       compliance: guard.compliance,
       training: "complete",
     };
@@ -233,6 +240,9 @@ export default function DeploymentPage() {
           </div>
           <div className="divide-y divide-border/30">
             {deployments.map((dep) => (
+              (() => {
+                const guardStatus = guardStatusConfig[dep.guardStatus || "on_duty"];
+                return (
               <div
                 key={dep.id}
                 className={`px-4 py-3 cursor-pointer transition-all ${selectedDep === dep.id ? "bg-[#A78BFA]/5 border-l-2 border-l-[#A78BFA]" : "hover:bg-accent/20 border-l-2 border-l-transparent"}`}
@@ -242,6 +252,9 @@ export default function DeploymentPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs font-bold">{dep.guard}</span>
                     <span className="font-mono text-[9px] text-muted-foreground">{dep.guardId}</span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded border font-mono text-[8px] tracking-wider uppercase ${guardStatus.bg} ${guardStatus.color} ${guardStatus.border}`}>
+                      {guardStatus.label}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     {dep.status === "warning" && <AlertTriangle className="h-3 w-3 text-tactical-amber" />}
@@ -262,6 +275,8 @@ export default function DeploymentPage() {
                   </div>
                 )}
               </div>
+                );
+              })()
             ))}
           </div>
         </div>
