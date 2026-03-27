@@ -41,10 +41,29 @@ export default function TacticalMap({
 }: TacticalMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const teamMarkersRef = useRef<Map<string, L.CircleMarker>>(new Map());
+  const teamMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const incidentMarkerRef = useRef<L.Marker | null>(null);
   const routeLineRef = useRef<L.Polyline | null>(null);
   const cssLoadedRef = useRef(false);
+
+  const getVehicleIcon = (color: string, heading: number, selected: boolean) =>
+    L.divIcon({
+      className: "qrf-vehicle-marker",
+      html: `
+        <div style="position:relative;width:${selected ? 30 : 26}px;height:${selected ? 30 : 26}px;transform:rotate(${heading}deg);">
+          <div style="position:absolute;inset:${selected ? "3px" : "4px"};background:#0d1117ee;border:2px solid ${color};border-radius:7px;display:flex;align-items:center;justify-content:center;box-shadow:${selected ? `0 0 12px ${color}66` : "0 0 0 transparent"};">
+            <svg xmlns="http://www.w3.org/2000/svg" width="${selected ? 14 : 12}" height="${selected ? 14 : 12}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 16H9m10 0h1a1 1 0 0 0 .94-1.34l-1.52-4.56A2 2 0 0 0 17.52 8H6.48a2 2 0 0 0-1.9 1.37L3.06 14a1 1 0 0 0 .94 1.32H5" />
+              <path d="M6 8 7 5h10l1 3" />
+              <circle cx="7" cy="16" r="2" />
+              <circle cx="17" cy="16" r="2" />
+            </svg>
+          </div>
+        </div>
+      `,
+      iconSize: [selected ? 30 : 26, selected ? 30 : 26],
+      iconAnchor: [selected ? 15 : 13, selected ? 15 : 13],
+    });
 
   // Inject Leaflet CSS via <link> tag (reliable across Next.js versions)
   useEffect(() => {
@@ -113,26 +132,27 @@ export default function TacticalMap({
     const map = mapRef.current;
     if (!map) return;
 
+    const activeTeamIds = new Set(teams.map((t) => t.id));
+    for (const [id, marker] of teamMarkersRef.current.entries()) {
+      if (!activeTeamIds.has(id)) {
+        marker.remove();
+        teamMarkersRef.current.delete(id);
+      }
+    }
+
     teams.forEach((team) => {
       const color = statusColorMap[team.status] || "#00FF9D";
       const existing = teamMarkersRef.current.get(team.id);
+      const selected = selectedTeam === team.id;
+      const vehicleIcon = getVehicleIcon(color, team.heading, selected);
 
       if (existing) {
         existing.setLatLng([team.lat, team.lng]);
-        existing.setStyle({
-          color: color,
-          fillColor: color,
-          fillOpacity: selectedTeam === team.id ? 0.8 : 0.4,
-          weight: selectedTeam === team.id ? 3 : 2,
-          radius: selectedTeam === team.id ? 10 : 7,
-        });
+        existing.setIcon(vehicleIcon);
+        existing.setZIndexOffset(selected ? 400 : 200);
       } else {
-        const marker = L.circleMarker([team.lat, team.lng], {
-          radius: selectedTeam === team.id ? 10 : 7,
-          color: color,
-          fillColor: color,
-          fillOpacity: selectedTeam === team.id ? 0.8 : 0.4,
-          weight: selectedTeam === team.id ? 3 : 2,
+        const marker = L.marker([team.lat, team.lng], {
+          icon: vehicleIcon,
         })
           .addTo(map)
           .on("click", () => onSelectTeam(team.id));
@@ -147,6 +167,7 @@ export default function TacticalMap({
           }
         );
 
+        marker.setZIndexOffset(selected ? 400 : 200);
         teamMarkersRef.current.set(team.id, marker);
       }
 

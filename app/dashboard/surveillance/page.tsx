@@ -5,20 +5,15 @@ import {
   Cctv,
   Search,
   ChevronRight,
-  ChevronDown,
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Settings2,
   AlertTriangle,
-  Activity,
   Maximize2,
   Grid,
   Radio,
-  Clock,
   Video,
   X,
+  Eye,
+  Camera,
+  Users,
 } from "lucide-react";
 
 // The mapped mock videos from the V2 folder
@@ -48,12 +43,154 @@ const CAMERA_GROUPS = [
   { id: "airspace", name: "Airspace (Drones)", zones: ["Airspace"] },
 ];
 
-const LIVE_EVENTS = [
-  { id: 1, title: "Suspicious Loitering", cam: "CAM-001 • Main Gate Entry", time: "14:23", color: "text-tactical-amber" },
-  { id: 2, title: "Camera Obstruction", cam: "CAM-005 • Production Facility", time: "14:18", color: "text-tactical-cyan" },
-  { id: 3, title: "Unauthorized Entry", cam: "CAM-006 • Restricted Compound", time: "14:11", color: "text-tactical-red" },
-  { id: 4, title: "Tailgating at Gate", cam: "CAM-001 • Main Gate Entry", time: "13:58", color: "text-tactical-amber" },
+type EventLevel = "critical" | "high" | "medium" | "low";
+
+interface LiveEvent {
+  id: number;
+  title: string;
+  camId: string;
+  location: string;
+  cam: string;
+  time: string;
+  timestamp: string;
+  color: string;
+  level: EventLevel;
+  confidence: number;
+  icon: React.ElementType;
+  description: string;
+  action: string;
+  video: string;
+}
+
+const eventLevelConfig: Record<EventLevel, { bg: string; text: string; border: string; badge: string; bar: string }> = {
+  critical: { bg: "bg-tactical-red/15",   text: "text-tactical-red",   border: "border-tactical-red/40",   badge: "CRITICAL RISK", bar: "bg-tactical-red"   },
+  high:     { bg: "bg-tactical-amber/15", text: "text-tactical-amber", border: "border-tactical-amber/40", badge: "HIGH RISK",     bar: "bg-tactical-amber" },
+  medium:   { bg: "bg-tactical-cyan/15",  text: "text-tactical-cyan",  border: "border-tactical-cyan/40",  badge: "MEDIUM RISK",   bar: "bg-tactical-cyan"  },
+  low:      { bg: "bg-tactical-green/15", text: "text-tactical-green", border: "border-tactical-green/40", badge: "LOW RISK",      bar: "bg-tactical-green" },
+};
+
+const LIVE_EVENTS: LiveEvent[] = [
+  {
+    id: 1, title: "Suspicious Loitering", camId: "CAM-001", location: "Main Gate Entry",
+    cam: "CAM-001 • Main Gate Entry", time: "14:23", timestamp: "06/03/2026, 14:23:11",
+    color: "text-tactical-amber", level: "high", confidence: 92, icon: Eye,
+    description: "Individual detected loitering near access gate for 12 minutes without authorization badge.",
+    action: "Dispatch guard team to verify identity and intent.",
+    video: "/videos/Events/Suspicious%20Lottering.mp4",
+  },
+  {
+    id: 2, title: "Camera Obstruction", camId: "CAM-005", location: "Production Facility",
+    cam: "CAM-005 • Production Facility", time: "14:18", timestamp: "06/03/2026, 14:18:44",
+    color: "text-tactical-cyan", level: "medium", confidence: 87, icon: Camera,
+    description: "Camera lens obstruction detected at production facility. Possible deliberate tampering or accidental blockage.",
+    action: "Send maintenance team to inspect camera. Deploy roving guard to cover the area.",
+    video: "/videos/Events/Camera_obstruction_event_5ab20ea8c9.mp4",
+  },
+  {
+    id: 3, title: "Unauthorized Entry", camId: "CAM-006", location: "Restricted Compound",
+    cam: "CAM-006 • Restricted Compound", time: "14:11", timestamp: "06/03/2026, 14:11:02",
+    color: "text-tactical-red", level: "critical", confidence: 96, icon: AlertTriangle,
+    description: "Individual breached restricted compound perimeter without valid access credentials. Multiple access control systems triggered.",
+    action: "Immediate lockdown of restricted area. Dispatch QRF team. Alert security supervisor.",
+    video: "/videos/Person%20Climbing%20Fence.mp4",
+  },
+  {
+    id: 4, title: "Tailgating at Gate", camId: "CAM-001", location: "Main Gate Entry",
+    cam: "CAM-001 • Main Gate Entry", time: "13:58", timestamp: "06/03/2026, 13:58:30",
+    color: "text-tactical-amber", level: "high", confidence: 89, icon: Users,
+    description: "Two individuals detected piggybacking entry through access-controlled gate. Second person did not badge in.",
+    action: "Review badge logs. Identify and verify both individuals. Issue security awareness reminder.",
+    video: "/videos/Cameras/Gate_surveillance%20video.mp4",
+  },
 ];
+
+function EventDetailModal({ event, onClose }: { event: LiveEvent; onClose: () => void }) {
+  const cfg = eventLevelConfig[event.level];
+  const Ic = event.icon;
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-2xl bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 shrink-0">
+          <h2 className="font-mono font-bold text-white text-base tracking-tight">
+            Event Detail — {event.camId}-EVT-{String(event.id).padStart(3, "0")}
+          </h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-muted-foreground hover:text-white">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 p-6 space-y-5">
+          {/* Level badge */}
+          <span className={`inline-flex items-center gap-1.5 font-mono text-xs font-bold px-3 py-1.5 rounded-lg border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
+            <Ic className="h-3 w-3" />
+            {cfg.badge}
+          </span>
+
+          {/* Detail table */}
+          <div className="rounded-xl border border-border/40 overflow-hidden">
+            {[
+              { label: "Event Type", value: event.title },
+              { label: "Location",   value: event.location },
+              { label: "Camera",     value: event.camId },
+              { label: "Timestamp",  value: event.timestamp },
+            ].map(({ label, value }, i, arr) => (
+              <div key={label} className={`flex items-center justify-between px-5 py-3.5 bg-black/20 ${i !== arr.length - 1 ? "border-b border-border/30" : ""}`}>
+                <span className="font-mono text-[11px] text-muted-foreground">{label}</span>
+                <span className="font-mono text-[12px] font-semibold text-white">{value}</span>
+              </div>
+            ))}
+            {/* Confidence row */}
+            <div className="flex items-center justify-between px-5 py-3.5 bg-black/20">
+              <span className="font-mono text-[11px] text-muted-foreground">AI Confidence</span>
+              <div className="flex items-center gap-3">
+                <div className="w-32 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div className={`h-full rounded-full ${cfg.bar}`} style={{ width: `${event.confidence}%` }} />
+                </div>
+                <span className={`font-mono text-[12px] font-bold ${cfg.text}`}>{event.confidence}%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="rounded-xl border border-border/40 bg-black/20 p-4 space-y-2">
+            <p className="font-mono text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-semibold">Description</p>
+            <p className="font-mono text-[12px] text-foreground/80 leading-relaxed">{event.description}</p>
+          </div>
+
+          {/* Recommended action */}
+          <div className={`rounded-xl border p-4 space-y-2 ${cfg.bg} ${cfg.border}`}>
+            <p className={`font-mono text-[9px] tracking-[0.18em] uppercase font-semibold ${cfg.text}`}>Recommended Action</p>
+            <p className="font-mono text-[12px] text-foreground/80 leading-relaxed">{event.action}</p>
+          </div>
+
+          {/* Camera feed */}
+          <div className="rounded-xl overflow-hidden border border-border/40 relative bg-zinc-900" style={{ aspectRatio: "16/9" }}>
+            <video key={event.video} src={event.video} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 3px)" }} />
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[9px] font-bold tracking-widest">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              LIVE
+            </div>
+            <div className="absolute top-3 right-3 font-mono text-[9px] text-white/60 tracking-widest bg-black/40 px-1.5 py-0.5 rounded">{event.camId}</div>
+            <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-between">
+              <span className="font-mono text-[10px] text-white/80">{event.location}</span>
+              <span className="font-mono text-[9px] text-tactical-green tracking-widest">● ONLINE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function timeNow() {
   return new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -65,6 +202,7 @@ export default function SurveillancePage() {
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
   const [sysTime, setSysTime] = useState("");
   const [expandedCamera, setExpandedCamera] = useState<any>(null);
+  const [selectedEvent, setSelectedEvent] = useState<LiveEvent | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -129,20 +267,31 @@ export default function SurveillancePage() {
         {/* Live Events log */}
         <div className="p-4 flex-1 overflow-y-auto">
           <span className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground uppercase block mb-4">Live Events</span>
-          <div className="space-y-4">
-            {LIVE_EVENTS.map(ev => (
-              <div key={ev.id} className="relative pl-3 border-l-2 border-border/40 hover:border-l-muted-foreground transition-colors">
-                <div className="absolute -left-[5px] top-1.5 h-2 w-2 rounded-full bg-background border border-current shadow-sm" style={{ color: "var(--tw-text-opacity)" }} />
-                <div className="flex items-start justify-between mb-0.5">
-                  <div className={`flex items-center gap-1.5 ${ev.color}`}>
-                    <div className={`h-1.5 w-1.5 rounded-full bg-current`} />
-                    <span className="font-mono text-xs font-bold">{ev.title}</span>
+          <div className="space-y-2">
+            {LIVE_EVENTS.map(ev => {
+              const cfg = eventLevelConfig[ev.level];
+              return (
+                <button
+                  key={ev.id}
+                  onClick={() => setSelectedEvent(ev)}
+                  className="w-full text-left rounded-lg border border-border/30 hover:border-border/60 bg-black/20 hover:bg-black/40 transition-colors p-3 group"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className={`flex items-center gap-1.5 ${ev.color}`}>
+                      <div className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+                      <span className="font-mono text-xs font-bold group-hover:underline">{ev.title}</span>
+                    </div>
+                    <span className="font-mono text-[9px] text-muted-foreground tabular-nums">{ev.time}</span>
                   </div>
-                  <span className="font-mono text-[9px] text-muted-foreground">{ev.time}</span>
-                </div>
-                <p className="font-mono text-[9px] text-muted-foreground mt-1">{ev.cam}</p>
-              </div>
-            ))}
+                  <p className="font-mono text-[9px] text-muted-foreground">{ev.cam}</p>
+                  <div className="mt-2">
+                    <div className="w-full h-1 rounded-full bg-white/5 overflow-hidden">
+                      <div className={`h-full rounded-full ${cfg.bar}`} style={{ width: `${ev.confidence}%` }} />
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -273,6 +422,11 @@ export default function SurveillancePage() {
           </div>
         </div>
       </div>
+
+      {/* ── EVENT DETAIL MODAL ── */}
+      {selectedEvent && (
+        <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
 
       {/* ── CAMERA EXPANDED OVERLAY ── */}
       {expandedCamera && (
