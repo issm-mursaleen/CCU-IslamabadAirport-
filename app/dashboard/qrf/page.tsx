@@ -213,6 +213,10 @@ export default function QRFPage() {
         sector: newTeam.sector || "Unassigned",
         lastUpdate: 0,
         heading: Math.floor(Math.random() * 360),
+        driver: "TBD",
+        assignedTo: "Unassigned",
+        destination: "Awaiting Orders",
+        eta: "—",
       },
     ]);
     setNewTeam({ name: "", callsign: "", vehicle: "", personnel: "4", sector: "", capabilities: [], lat: "33.70", lng: "73.06" });
@@ -420,6 +424,12 @@ export default function QRFPage() {
                 lng: t.lng,
                 status: t.status,
                 heading: t.heading,
+                vehicle: t.vehicle,
+                personnel: t.personnel,
+                driver: t.driver,
+                assignedTo: t.assignedTo,
+                destination: t.destination,
+                eta: t.eta,
               }))}
               incident={{
                 id: mapIncident.id,

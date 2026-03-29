@@ -354,3 +354,32 @@
 .light .corner-accent::after {
   border-color: #04785740;
 }
+
+/* ── Tactical map popup — strip ALL Leaflet default chrome ── */
+.tactical-popup,
+.tactical-popup .leaflet-popup-content-wrapper,
+.tactical-popup .leaflet-popup-content-wrapper * {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+.tactical-popup .leaflet-popup-content {
+  width: auto !important;
+}
+.tactical-popup .leaflet-popup-tip-container,
+.tactical-popup .leaflet-popup-tip {
+  display: none !important;
+}
+.tactical-tooltip,
+.tactical-tooltip.leaflet-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.tactical-tooltip::before {
+  display: none !important;
+}

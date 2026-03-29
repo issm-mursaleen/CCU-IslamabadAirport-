@@ -10,6 +10,11 @@ interface TeamMarker {
   lng: number;
   status: string;
   heading: number;
+  vehicle?: string;
+  driver?: string;
+  assignedTo?: string;
+  destination?: string;
+  eta?: string;
 }
 
 interface IncidentMarker {
@@ -60,8 +65,8 @@ export default function TacticalMap({
 
   /** Top-down car icon — unique team color body, proper car silhouette with curves. */
   const getVehicleIcon = (teamColor: string, statusColor: string, heading: number, selected: boolean) => {
-    const w = selected ? 38 : 32;
-    const h = selected ? 62 : 52;
+    const w = selected ? 20 : 16;
+    const h = selected ? 34 : 28;
     const scale = selected ? 1.06 : 1;
     return L.divIcon({
       className: "qrf-vehicle-marker",
@@ -231,32 +236,80 @@ export default function TacticalMap({
       const selected = selectedTeam === team.id;
       const vehicleIcon = getVehicleIcon(teamColor, statusColor, team.heading, selected);
 
+      const isLight = document.documentElement.classList.contains("light");
+      const bg      = isLight ? "#ffffff"              : "#0d1117";
+      const divider = isLight ? "#c8d0dc"              : "#30363d55";
+      const label   = isLight ? "#5a6578"              : "#8b949e";
+      const value   = isLight ? "#141820"              : "#e6edf3";
+      const etaClr  = isLight ? "#047857"              : "#00FF9D";
+      const shadow  = isLight ? "0 8px 24px rgba(0,0,0,0.18)" : "0 8px 24px rgba(0,0,0,0.6)";
+
+      const popupHtml = (t: TeamMarker, color: string) => {
+        const border   = isLight ? `${color}66` : `${color}55`;
+        const headerBg = isLight ? `${color}12` : `${color}18`;
+        return `
+        <div style="font-family:monospace;min-width:220px;background:${bg};border:1px solid ${border};border-radius:8px;overflow:hidden;box-shadow:${shadow};">
+          <div style="background:${headerBg};border-bottom:1px solid ${border};padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="color:${color};font-size:11px;font-weight:bold;letter-spacing:0.12em;">${t.callsign}</span>
+            <span style="font-size:9px;color:${label};letter-spacing:0.08em;">${t.id}</span>
+          </div>
+          <div style="padding:10px 12px;display:grid;gap:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid ${divider};padding-bottom:6px;">
+              <span style="font-size:9px;color:${label};letter-spacing:0.1em;text-transform:uppercase;">Vehicle</span>
+              <span style="font-size:10px;color:${value};font-weight:bold;">${t.vehicle ?? "—"}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid ${divider};padding-bottom:6px;">
+              <span style="font-size:9px;color:${label};letter-spacing:0.1em;text-transform:uppercase;">Driver</span>
+              <span style="font-size:10px;color:${value};font-weight:bold;">${t.driver ?? "—"}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid ${divider};padding-bottom:6px;">
+              <span style="font-size:9px;color:${label};letter-spacing:0.1em;text-transform:uppercase;">Assigned To</span>
+              <span style="font-size:10px;color:${value};font-weight:bold;">${t.assignedTo ?? "—"}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid ${divider};padding-bottom:6px;">
+              <span style="font-size:9px;color:${label};letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;margin-right:8px;">Destination</span>
+              <span style="font-size:10px;color:${color};font-weight:bold;text-align:right;">${t.destination ?? "—"}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:9px;color:${label};letter-spacing:0.1em;text-transform:uppercase;">ETA</span>
+              <span style="font-size:10px;color:${etaClr};font-weight:bold;">${t.eta ?? "—"}</span>
+            </div>
+          </div>
+        </div>`;
+      };
+
       if (existing) {
         existing.setLatLng([team.lat, team.lng]);
         existing.setIcon(vehicleIcon);
         existing.setZIndexOffset(selected ? 400 : 200);
+        // Refresh popup content in case team data changed
+        if (existing.getPopup()) existing.setPopupContent(popupHtml(team, teamColor));
       } else {
-        const marker = L.marker([team.lat, team.lng], {
-          icon: vehicleIcon,
-        })
+        const marker = L.marker([team.lat, team.lng], { icon: vehicleIcon })
           .addTo(map)
           .on("click", () => onSelectTeam(team.id));
 
         marker.bindTooltip(
           `<div style="font-family:monospace;font-size:10px;letter-spacing:0.1em;color:${teamColor};font-weight:bold;background:#0d1117ee;border:1px solid ${teamColor}44;padding:3px 8px;border-radius:4px;">${team.callsign}</div>`,
-          {
-            permanent: true,
-            direction: "bottom",
-            offset: [0, 8],
-            className: "tactical-tooltip",
-          }
+          { permanent: true, direction: "bottom", offset: [0, 8], className: "tactical-tooltip" }
         );
+
+        marker.bindPopup(popupHtml(team, teamColor), {
+          className: "tactical-popup",
+          maxWidth: 260,
+          offset: [0, -8],
+          closeButton: false,
+          autoClose: true,
+        });
+
+        marker.on("mouseover", () => marker.openPopup());
+        marker.on("mouseout",  () => marker.closePopup());
 
         marker.setZIndexOffset(selected ? 400 : 200);
         teamMarkersRef.current.set(team.id, marker);
       }
 
-      // Update tooltip content with current callsign color
+      // Update tooltip callsign label color
       const m = teamMarkersRef.current.get(team.id);
       if (m) {
         m.setTooltipContent(
