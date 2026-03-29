@@ -140,8 +140,8 @@ function GuardProfileModal({ guard, onClose }: { guard: PersonnelEntry; onClose:
       <div className="relative z-10 h-full w-full max-w-md bg-card border-l border-border/60 shadow-2xl flex flex-col overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border/40 shrink-0">
-          <h2 className="font-bold text-white text-lg tracking-tight">Guard Profile</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-muted-foreground hover:text-white">
+          <h2 className="font-bold text-foreground text-lg tracking-tight">Guard Profile</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -150,10 +150,10 @@ function GuardProfileModal({ guard, onClose }: { guard: PersonnelEntry; onClose:
           {/* Avatar + identity */}
           <div className="flex items-center gap-4">
             <div className={`h-16 w-16 rounded-full ${avatarBg} flex items-center justify-center shrink-0`}>
-              <span className="font-bold text-white text-xl tracking-wide">{getInitials(guard.name)}</span>
+              <span className="font-bold text-foreground text-xl tracking-wide">{getInitials(guard.name)}</span>
             </div>
             <div>
-              <h3 className="font-bold text-white text-xl">{guard.name}</h3>
+              <h3 className="font-bold text-foreground text-xl">{guard.name}</h3>
               <div className="flex items-center gap-2 mt-1.5">
                 <span className={`inline-flex items-center gap-1 font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${sc.bg} ${sc.color} ${sc.border}`}>
                   {guard.status === "alert" && <AlertTriangle className="h-2.5 w-2.5" />}
@@ -174,12 +174,12 @@ function GuardProfileModal({ guard, onClose }: { guard: PersonnelEntry; onClose:
                 { icon: UserCircle,   label: "Experience",      value: profile.experience },
                 { icon: ClipboardList,label: "Recent Incidents",value: profile.incidents, highlight: profile.incidents > 0 },
               ].map(({ icon: Icon, label, value, highlight }) => (
-                <div key={label} className="flex items-center justify-between px-4 py-3 bg-black/20">
+                <div key={label} className="flex items-center justify-between px-4 py-3 bg-secondary/60">
                   <div className="flex items-center gap-2.5">
                     <Icon className="h-3.5 w-3.5 text-muted-foreground/50" />
                     <span className="font-mono text-[12px] text-muted-foreground">{label}</span>
                   </div>
-                  <span className={`font-mono text-[12px] font-bold ${highlight ? "text-tactical-amber" : "text-white"}`}>{value}</span>
+                  <span className={`font-mono text-[12px] font-bold ${highlight ? "text-tactical-amber" : "text-foreground"}`}>{value}</span>
                 </div>
               ))}
             </div>
@@ -188,12 +188,12 @@ function GuardProfileModal({ guard, onClose }: { guard: PersonnelEntry; onClose:
           {/* AI Risk Assessment */}
           <div>
             <p className="font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase font-semibold mb-3">AI Risk Assessment</p>
-            <div className="rounded-xl border border-border/40 bg-black/30 p-5 space-y-3">
+            <div className="rounded-xl border border-border/40 bg-secondary/80 p-5 space-y-3">
               <div className="flex flex-col items-center gap-1">
                 <span className={`font-mono font-bold text-6xl leading-none ${rc.text}`}>{guard.risk}</span>
                 <span className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">Risk Score</span>
               </div>
-              <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden mt-2">
+              <div className="w-full h-2 rounded-full bg-muted/40 overflow-hidden mt-2">
                 <div className={`h-full rounded-full ${rc.bar} transition-all`} style={{ width: `${Math.min(guard.risk * 1.5, 100)}%` }} />
               </div>
             </div>
@@ -301,7 +301,6 @@ export default function DeploymentPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">Deployment & Reserve Pool</h1>
-            <p className="text-xs text-muted-foreground font-mono">MOD-04 — Real-time Deployment Board & Jump Pool</p>
           </div>
         </div>
         <Dialog>
@@ -311,7 +310,7 @@ export default function DeploymentPage() {
               BULK DEPLOY
             </button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md bg-black border border-[#A78BFA]/30 text-foreground">
+          <DialogContent className="sm:max-w-md bg-card border border-[#A78BFA]/30 text-foreground">
             <DialogHeader>
               <DialogTitle className="font-mono text-[#A78BFA] uppercase tracking-wider text-sm flex items-center gap-2">
                 <Upload className="h-4 w-4" /> Bulk Deployment Upload
@@ -365,7 +364,7 @@ export default function DeploymentPage() {
         <div className={`glow-border rounded-xl bg-card noise-texture overflow-hidden ${mounted ? "fade-in-up" : "opacity-0"}`} style={{ animationDelay: "250ms" }}>
           {/* Roster header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
-            <h2 className="font-bold text-white text-base tracking-tight">Personnel Roster</h2>
+            <h2 className="font-bold text-foreground text-base tracking-tight">Personnel Roster</h2>
             <span className="font-mono text-[11px] text-muted-foreground">{roster.length} guards</span>
           </div>
 
@@ -397,11 +396,11 @@ export default function DeploymentPage() {
                     <tr
                       key={guard.id}
                       onClick={() => setSelectedId(isSelected ? null : guard.id)}
-                      className={`cursor-pointer transition-colors ${isSelected ? "bg-[#A78BFA]/5 border-l-2 border-[#A78BFA]" : "hover:bg-white/[0.02] border-l-2 border-transparent"}`}
+                      className={`cursor-pointer transition-colors ${isSelected ? "bg-[#A78BFA]/5 border-l-2 border-[#A78BFA]" : "hover:bg-accent/20 border-l-2 border-transparent"}`}
                     >
                       {/* Name */}
                       <td className="px-5 py-3.5">
-                        <span className={`font-mono font-bold text-sm ${isSelected ? "text-[#A78BFA]" : "text-white"} transition-colors`}>{guard.name}</span>
+                        <span className={`font-mono font-bold text-sm ${isSelected ? "text-[#A78BFA]" : "text-foreground"} transition-colors`}>{guard.name}</span>
                       </td>
                       {/* Post */}
                       <td className="px-5 py-3.5">
@@ -422,7 +421,7 @@ export default function DeploymentPage() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
                           <span className={`w-2 h-2 rounded-full shrink-0 ${rc.dot}`} />
-                          <div className="w-20 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                          <div className="w-20 h-1.5 rounded-full bg-muted/40 overflow-hidden">
                             <div className={`h-full rounded-full ${rc.bar}`} style={{ width: `${Math.min(guard.risk * 2, 100)}%` }} />
                           </div>
                           <span className={`font-mono text-sm font-bold tabular-nums ${rc.text}`}>{guard.risk}</span>
@@ -439,7 +438,7 @@ export default function DeploymentPage() {
         {/* Right panel */}
         <div className="space-y-3">
           {selectedGuard ? (
-            <div className="glow-border rounded-lg bg-black border border-[#A78BFA]/30 overflow-hidden relative shadow-[0_0_20px_rgba(167,139,250,0.05)] fade-in-up animate-in slide-in-from-right-4">
+            <div className="glow-border rounded-lg bg-card border border-[#A78BFA]/30 overflow-hidden relative shadow-[0_0_20px_rgba(167,139,250,0.05)] fade-in-up animate-in slide-in-from-right-4">
               <div className="px-4 py-3 bg-gradient-to-r from-[#A78BFA]/20 to-transparent flex items-start justify-between border-b border-[#A78BFA]/20">
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full bg-[#A78BFA]/20 flex items-center justify-center border border-[#A78BFA]/40">
@@ -450,8 +449,8 @@ export default function DeploymentPage() {
                     <span className="font-mono text-[9px] text-[#A78BFA] tracking-[0.15em]">{selectedGuard.guardId}</span>
                   </div>
                 </div>
-                <button onClick={() => setSelectedId(null)} className="p-1 hover:bg-white/10 rounded transition-colors cursor-pointer">
-                  <X className="h-4 w-4 text-muted-foreground hover:text-white" />
+                <button onClick={() => setSelectedId(null)} className="p-1 hover:bg-accent/50 rounded transition-colors cursor-pointer">
+                  <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                 </button>
               </div>
 
@@ -497,7 +496,7 @@ export default function DeploymentPage() {
                         Re-Deploy
                       </button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md bg-black border border-[#A78BFA]/30 text-foreground">
+                    <DialogContent className="sm:max-w-md bg-card border border-[#A78BFA]/30 text-foreground">
                       <DialogHeader>
                         <DialogTitle className="font-mono text-[#A78BFA] uppercase tracking-wider text-sm flex items-center gap-2">
                           <ArrowRightLeft className="h-4 w-4" /> Update Deployment
@@ -570,7 +569,7 @@ export default function DeploymentPage() {
                         </div>
                       </DialogTrigger>
                       {guard.available && (
-                        <DialogContent className="sm:max-w-md bg-black border border-[#A78BFA]/30 text-foreground">
+                        <DialogContent className="sm:max-w-md bg-card border border-[#A78BFA]/30 text-foreground">
                           <DialogHeader>
                             <DialogTitle className="font-mono text-[#A78BFA] uppercase tracking-wider text-sm flex items-center gap-2">
                               <Shield className="h-4 w-4" /> Instantiate New Deployment

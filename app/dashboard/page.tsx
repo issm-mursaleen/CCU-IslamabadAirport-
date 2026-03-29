@@ -190,27 +190,27 @@ function CameraModal({ cam, onClose }: { cam: typeof cameras[0]; onClose: () => 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-4xl bg-zinc-950 border border-border/60 rounded-2xl overflow-hidden shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/40 bg-black/40">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/40 bg-secondary/60">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded font-mono text-[9px] font-bold tracking-widest text-white">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               LIVE
             </div>
-            <span className="font-mono font-bold text-white text-sm">{cam.name}</span>
+            <span className="font-mono font-bold text-foreground text-sm">{cam.name}</span>
             <span className="font-mono text-[10px] text-muted-foreground">{cam.id}</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="font-mono text-[10px] text-tactical-green tracking-widest">● ONLINE</span>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-muted-foreground hover:text-white">
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
         </div>
         {/* Video */}
-        <div className="relative bg-black" style={{ aspectRatio: "16/9" }}>
+        <div className="relative bg-card" style={{ aspectRatio: "16/9" }}>
           <video
             key={cam.video}
             src={cam.video}
@@ -241,16 +241,16 @@ function EventDetailModal({ event, onClose }: { event: SecurityEvent; onClose: (
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative z-10 w-full max-w-2xl bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/40">
-          <h2 className="font-mono font-bold text-white text-base tracking-tight">
+          <h2 className="font-mono font-bold text-foreground text-base tracking-tight">
             Event Detail — {event.id}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-muted-foreground hover:text-white">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -273,16 +273,16 @@ function EventDetailModal({ event, onClose }: { event: SecurityEvent; onClose: (
               { label: "Camera",        value: event.camera },
               { label: "Timestamp",     value: event.timestamp },
             ].map(({ label, value }, i, arr) => (
-              <div key={label} className={`flex items-center justify-between px-5 py-3.5 ${i !== arr.length - 1 ? "border-b border-border/30" : ""} bg-black/20`}>
+              <div key={label} className={`flex items-center justify-between px-5 py-3.5 ${i !== arr.length - 1 ? "border-b border-border/30" : ""} bg-secondary/40`}>
                 <span className="font-mono text-[11px] text-muted-foreground">{label}</span>
-                <span className="font-mono text-[12px] font-semibold text-white">{value}</span>
+                <span className="font-mono text-[12px] font-semibold text-foreground">{value}</span>
               </div>
             ))}
             {/* Confidence row */}
-            <div className="flex items-center justify-between px-5 py-3.5 bg-black/20">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-secondary/40">
               <span className="font-mono text-[11px] text-muted-foreground">AI Confidence</span>
               <div className="flex items-center gap-3">
-                <div className="w-32 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div className="w-32 h-1.5 rounded-full bg-muted/40 overflow-hidden">
                   <div className={`h-full rounded-full ${cfg.bar}`} style={{ width: `${event.confidence}%` }} />
                 </div>
                 <span className={`font-mono text-[12px] font-bold ${cfg.text}`}>{event.confidence}%</span>
@@ -291,7 +291,7 @@ function EventDetailModal({ event, onClose }: { event: SecurityEvent; onClose: (
           </div>
 
           {/* Description */}
-          <div className="rounded-xl border border-border/40 bg-black/20 p-4 space-y-2">
+          <div className="rounded-xl border border-border/40 bg-secondary/40 p-4 space-y-2">
             <p className="font-mono text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-semibold">Description</p>
             <p className="font-mono text-[12px] text-foreground/80 leading-relaxed">{event.description}</p>
           </div>
@@ -318,9 +318,9 @@ function EventDetailModal({ event, onClose }: { event: SecurityEvent; onClose: (
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               LIVE
             </div>
-            <div className="absolute top-3 right-3 font-mono text-[9px] text-white/60 tracking-widest bg-black/40 px-1.5 py-0.5 rounded">{event.camera}</div>
+            <div className="absolute top-3 right-3 font-mono text-[9px] text-white/80 tracking-widest bg-black/40 px-1.5 py-0.5 rounded">{event.camera}</div>
             <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-between">
-              <span className="font-mono text-[10px] text-white/80">{event.location}</span>
+              <span className="font-mono text-[10px] text-white/90">{event.location}</span>
               <span className="font-mono text-[9px] text-tactical-green tracking-widest">● ONLINE</span>
             </div>
           </div>
@@ -343,7 +343,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-end justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight font-mono text-white">Command Centre Overview</h1>
+            <h1 className="text-2xl font-bold tracking-tight font-mono text-foreground">Command Centre Overview</h1>
             <p className="text-sm text-muted-foreground font-mono mt-0.5">Real-time operational status across all security systems</p>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-tactical-green/10 border border-tactical-green/20">
@@ -380,7 +380,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/40">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-tactical-red animate-pulse" />
-                <span className="font-mono font-bold text-sm text-white">Live Event Alert Feed</span>
+                <span className="font-mono font-bold text-sm text-foreground">Live Event Alert Feed</span>
               </div>
               <span className="font-mono text-[10px] text-muted-foreground">{events.length} events</span>
             </div>
@@ -393,7 +393,7 @@ export default function DashboardPage() {
                   <button
                     key={evt.id}
                     onClick={() => setSelectedEvent(evt)}
-                    className="w-full text-left px-5 py-3.5 hover:bg-white/[0.03] transition-colors group"
+                    className="w-full text-left px-5 py-3.5 hover:bg-accent/20 transition-colors group"
                   >
                     <div className="flex items-start gap-3">
                       <div className={`mt-0.5 p-1.5 rounded-md ${cfg.bg} shrink-0`}>
@@ -401,7 +401,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-0.5">
-                          <span className="font-mono font-semibold text-sm text-white group-hover:text-tactical-cyan transition-colors truncate">{evt.title}</span>
+                          <span className="font-mono font-semibold text-sm text-foreground group-hover:text-tactical-cyan transition-colors truncate">{evt.title}</span>
                           <div className="flex items-center gap-2 shrink-0">
                             <span className={`font-mono text-[9px] font-bold px-2 py-0.5 rounded tracking-wider ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
                               {evt.level.toUpperCase()}
@@ -415,7 +415,7 @@ export default function DashboardPage() {
                           <span>{evt.camera}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1 rounded-full bg-white/5 overflow-hidden">
+                          <div className="flex-1 h-1 rounded-full bg-muted/30 overflow-hidden">
                             <div className={`h-full rounded-full ${cfg.bar} transition-all`} style={{ width: `${evt.confidence}%` }} />
                           </div>
                           <span className={`font-mono text-[10px] font-semibold ${cfg.text} w-8 text-right tabular-nums`}>{evt.confidence}%</span>
@@ -435,7 +435,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
                 <div className="flex items-center gap-2">
                   <Video className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="font-mono font-bold text-sm text-white">Priority Feeds</span>
+                  <span className="font-mono font-bold text-sm text-foreground">Priority Feeds</span>
                 </div>
                 <span className="font-mono text-[10px] text-tactical-green">● {cameras.length} online</span>
               </div>
@@ -458,8 +458,8 @@ export default function DashboardPage() {
                     <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 3px)" }} />
                     {/* Expand hint on hover */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="bg-black/50 rounded-full p-2">
-                        <Video className="h-5 w-5 text-white" />
+                      <div className="bg-muted/50 rounded-full p-2">
+                        <Video className="h-5 w-5 text-foreground" />
                       </div>
                     </div>
                     <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-tactical-red px-1.5 py-0.5 rounded text-white font-mono text-[8px] font-bold tracking-widest">
@@ -480,7 +480,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-3.5 w-3.5 text-tactical-red" />
-                  <span className="font-mono font-bold text-sm text-white">Critical Events</span>
+                  <span className="font-mono font-bold text-sm text-foreground">Critical Events</span>
                 </div>
                 <span className="font-mono text-[10px] text-muted-foreground">{criticalEvents.length} events</span>
               </div>
@@ -496,7 +496,7 @@ export default function DashboardPage() {
                       <div className="flex items-start gap-2.5">
                         <Ic className="h-3.5 w-3.5 text-tactical-red shrink-0 mt-0.5" />
                         <div className="min-w-0">
-                          <p className="font-mono text-xs font-semibold text-white group-hover:text-tactical-red transition-colors truncate">{evt.title}</p>
+                          <p className="font-mono text-xs font-semibold text-foreground group-hover:text-tactical-red transition-colors truncate">{evt.title}</p>
                           <p className="font-mono text-[10px] text-muted-foreground truncate">{evt.location} • {evt.camera}</p>
                         </div>
                         <span className="font-mono text-[10px] text-muted-foreground tabular-nums shrink-0 ml-auto">{evt.time}</span>

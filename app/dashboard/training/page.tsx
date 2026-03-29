@@ -138,7 +138,6 @@ export default function TrainingPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">Training Management</h1>
-            <p className="text-xs text-muted-foreground font-mono">MOD-03 — Certification Tracking & Eligibility</p>
           </div>
         </div>
         <Dialog>
@@ -148,7 +147,7 @@ export default function TrainingPage() {
               BULK UPLOAD
             </button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md bg-black border border-tactical-amber/30 text-foreground">
+          <DialogContent className="sm:max-w-md bg-card border border-tactical-amber/30 text-foreground">
             <DialogHeader>
               <DialogTitle className="font-mono text-tactical-amber uppercase tracking-wider text-sm flex items-center gap-2">
                 <Upload className="h-4 w-4" />
@@ -305,7 +304,7 @@ export default function TrainingPage() {
         {/* Details Sidebar container */}
         {selectedRecord && (
           <div className="w-full lg:w-[350px] shrink-0 space-y-4 fade-in-up animate-in slide-in-from-right-4">
-            <div className="glow-border rounded-lg bg-black border border-tactical-amber/30 overflow-hidden relative shadow-[0_0_20px_rgba(255,170,0,0.05)]">
+            <div className="glow-border rounded-lg bg-card border border-tactical-amber/30 overflow-hidden relative shadow-[0_0_20px_rgba(255,170,0,0.05)]">
               {/* Header */}
               <div className="px-4 py-3 bg-gradient-to-r from-tactical-amber/20 to-transparent flex items-start justify-between border-b border-tactical-amber/20">
                 <div className="flex items-center gap-2">
@@ -319,9 +318,9 @@ export default function TrainingPage() {
                 </div>
                 <button 
                   onClick={() => setSelectedRecord(null)}
-                  className="p-1 hover:bg-white/10 rounded transition-colors"
+                  className="p-1 hover:bg-accent/50 rounded transition-colors"
                 >
-                  <X className="h-4 w-4 text-muted-foreground hover:text-white" />
+                  <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                 </button>
               </div>
 
@@ -395,7 +394,7 @@ export default function TrainingPage() {
                         View Scan
                       </button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px] bg-black border border-tactical-amber/40 text-foreground">
+                    <DialogContent className="sm:max-w-[600px] bg-card border border-tactical-amber/40 text-foreground">
                       <DialogHeader>
                         <DialogTitle className="font-mono text-tactical-amber uppercase tracking-wider text-sm flex items-center gap-2">
                           <FileText className="h-4 w-4" />

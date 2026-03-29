@@ -120,10 +120,10 @@ function EventDetailModal({ event, onClose }: { event: LiveEvent; onClose: () =>
       <div className="relative z-10 w-full max-w-2xl bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 shrink-0">
-          <h2 className="font-mono font-bold text-white text-base tracking-tight">
+          <h2 className="font-mono font-bold text-foreground text-base tracking-tight">
             Event Detail — {event.camId}-EVT-{String(event.id).padStart(3, "0")}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-muted-foreground hover:text-white">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -143,16 +143,16 @@ function EventDetailModal({ event, onClose }: { event: LiveEvent; onClose: () =>
               { label: "Camera",     value: event.camId },
               { label: "Timestamp",  value: event.timestamp },
             ].map(({ label, value }, i, arr) => (
-              <div key={label} className={`flex items-center justify-between px-5 py-3.5 bg-black/20 ${i !== arr.length - 1 ? "border-b border-border/30" : ""}`}>
+              <div key={label} className={`flex items-center justify-between px-5 py-3.5 bg-secondary/40 ${i !== arr.length - 1 ? "border-b border-border/30" : ""}`}>
                 <span className="font-mono text-[11px] text-muted-foreground">{label}</span>
-                <span className="font-mono text-[12px] font-semibold text-white">{value}</span>
+                <span className="font-mono text-[12px] font-semibold text-foreground">{value}</span>
               </div>
             ))}
             {/* Confidence row */}
-            <div className="flex items-center justify-between px-5 py-3.5 bg-black/20">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-secondary/40">
               <span className="font-mono text-[11px] text-muted-foreground">AI Confidence</span>
               <div className="flex items-center gap-3">
-                <div className="w-32 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div className="w-32 h-1.5 rounded-full bg-muted/40 overflow-hidden">
                   <div className={`h-full rounded-full ${cfg.bar}`} style={{ width: `${event.confidence}%` }} />
                 </div>
                 <span className={`font-mono text-[12px] font-bold ${cfg.text}`}>{event.confidence}%</span>
@@ -161,7 +161,7 @@ function EventDetailModal({ event, onClose }: { event: LiveEvent; onClose: () =>
           </div>
 
           {/* Description */}
-          <div className="rounded-xl border border-border/40 bg-black/20 p-4 space-y-2">
+          <div className="rounded-xl border border-border/40 bg-secondary/40 p-4 space-y-2">
             <p className="font-mono text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-semibold">Description</p>
             <p className="font-mono text-[12px] text-foreground/80 leading-relaxed">{event.description}</p>
           </div>
@@ -274,7 +274,7 @@ export default function SurveillancePage() {
                 <button
                   key={ev.id}
                   onClick={() => setSelectedEvent(ev)}
-                  className="w-full text-left rounded-lg border border-border/30 hover:border-border/60 bg-black/20 hover:bg-black/40 transition-colors p-3 group"
+                  className="w-full text-left rounded-lg border border-border/30 hover:border-border/60 bg-secondary/30 hover:bg-secondary/60 transition-colors p-3 group"
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <div className={`flex items-center gap-1.5 ${ev.color}`}>
@@ -285,7 +285,7 @@ export default function SurveillancePage() {
                   </div>
                   <p className="font-mono text-[9px] text-muted-foreground">{ev.cam}</p>
                   <div className="mt-2">
-                    <div className="w-full h-1 rounded-full bg-white/5 overflow-hidden">
+                    <div className="w-full h-1 rounded-full bg-muted/30 overflow-hidden">
                       <div className={`h-full rounded-full ${cfg.bar}`} style={{ width: `${ev.confidence}%` }} />
                     </div>
                   </div>
@@ -356,12 +356,12 @@ export default function SurveillancePage() {
               <div 
                 key={cam.id} 
                 onClick={() => cam.status === "live" && setExpandedCamera(cam)}
-                className={`relative bg-black rounded-lg border border-border/40 overflow-hidden flex flex-col group ${cam.status === "live" ? "cursor-pointer" : ""} ${mounted ? "fade-in-up" : "opacity-0"}`} 
+                className={`relative bg-card rounded-lg border border-border/40 overflow-hidden flex flex-col group ${cam.status === "live" ? "cursor-pointer" : ""} ${mounted ? "fade-in-up" : "opacity-0"}`} 
                 style={{ animationDelay: `${i * 50}ms` }}
               >
                 
                 {/* Video Player */}
-                <div className="absolute inset-0 z-0 bg-black flex items-center justify-center">
+                <div className="absolute inset-0 z-0 bg-muted/50 flex items-center justify-center">
                   {cam.status === "live" ? (
                     <>
                       <video 
@@ -372,7 +372,7 @@ export default function SurveillancePage() {
                         playsInline
                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
                       />
-                      <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 p-1.5 rounded backdrop-blur border border-white/10 hidden md:flex items-center justify-center pointer-events-none">
+                      <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-background/70 p-1.5 rounded backdrop-blur border border-border/30 hidden md:flex items-center justify-center pointer-events-none">
                         <Maximize2 className="h-3 w-3 text-white" />
                       </div>
                     </>
@@ -395,7 +395,7 @@ export default function SurveillancePage() {
                       LIVE
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-muted/80 text-white/60 text-[8px] md:text-[9px] font-mono font-bold tracking-widest">
+                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground text-[8px] md:text-[9px] font-mono font-bold tracking-widest">
                       OFFLINE
                     </div>
                   )}

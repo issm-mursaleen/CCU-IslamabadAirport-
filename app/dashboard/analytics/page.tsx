@@ -588,7 +588,7 @@ export default function ThreatIntelPage() {
     <div className="space-y-6 max-w-7xl">
       {/* Header section */}
       <div className={`space-y-1 ${mounted ? "fade-in-up" : "opacity-0"}`}>
-        <h1 className="text-2xl font-bold tracking-tight text-white font-mono">Threat Intelligence Feed</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground font-mono">Threat Intelligence Feed</h1>
         <p className="text-sm text-muted-foreground font-mono">
           External risk signals, intelligence analysis, and security posture recommendations — TAP, Champ, WhatsApp, OSINT
         </p>
@@ -601,7 +601,7 @@ export default function ThreatIntelPage() {
             <AlertTriangle className="h-5 w-5 text-tactical-red" />
           </div>
           <div>
-            <p className="text-3xl font-bold font-mono text-white">{threats.filter(t => t.level === "critical").length}</p>
+            <p className="text-3xl font-bold font-mono text-foreground">{threats.filter(t => t.level === "critical").length}</p>
             <p className="text-[10px] tracking-widest text-muted-foreground uppercase font-mono">Critical Threats</p>
           </div>
         </div>
@@ -611,7 +611,7 @@ export default function ThreatIntelPage() {
             <ShieldCheck className="h-5 w-5 text-tactical-amber" />
           </div>
           <div>
-            <p className="text-3xl font-bold font-mono text-white">{threats.filter(t => t.level === "high").length}</p>
+            <p className="text-3xl font-bold font-mono text-foreground">{threats.filter(t => t.level === "high").length}</p>
             <p className="text-[10px] tracking-widest text-muted-foreground uppercase font-mono">High Threats</p>
           </div>
         </div>
@@ -621,7 +621,7 @@ export default function ThreatIntelPage() {
             <MapPin className="h-5 w-5 text-tactical-cyan" />
           </div>
           <div>
-            <p className="text-3xl font-bold font-mono text-white">{threats.length}</p>
+            <p className="text-3xl font-bold font-mono text-foreground">{threats.length}</p>
             <p className="text-[10px] tracking-widest text-muted-foreground uppercase font-mono">Total Alerts</p>
           </div>
         </div>
@@ -650,16 +650,16 @@ export default function ThreatIntelPage() {
               <Radio className="h-3 w-3 text-tactical-green" /> TAP ({threats.filter(t => t.platform === "tap").length})
             </button>
             <button onClick={() => setSourceFilter("champ")} className={getPillStyle(sourceFilter === "champ")}>
-              <AlertTriangle className="h-3 w-3 text-white" /> Champ Alert ({threats.filter(t => t.platform === "champ").length})
+              <AlertTriangle className="h-3 w-3 text-foreground" /> Champ Alert ({threats.filter(t => t.platform === "champ").length})
             </button>
             <button onClick={() => setSourceFilter("whatsapp")} className={getPillStyle(sourceFilter === "whatsapp")}>
-              <MessageCircle className="h-3 w-3 text-white" /> WhatsApp Group ({threats.filter(t => t.platform === "whatsapp").length})
+              <MessageCircle className="h-3 w-3 text-foreground" /> WhatsApp Group ({threats.filter(t => t.platform === "whatsapp").length})
             </button>
             <button onClick={() => setSourceFilter("social media")} className={getPillStyle(sourceFilter === "social media")}>
               <Smartphone className="h-3 w-3 text-tactical-cyan" /> Social Media ({threats.filter(t => t.platform === "social media").length})
             </button>
             <button onClick={() => setSourceFilter("gov")} className={getPillStyle(sourceFilter === "gov")}>
-              <Landmark className="h-3 w-3 text-white" /> Government Notification ({threats.filter(t => t.platform === "gov").length})
+              <Landmark className="h-3 w-3 text-foreground" /> Government Notification ({threats.filter(t => t.platform === "gov").length})
             </button>
           </div>
 
@@ -702,13 +702,13 @@ export default function ThreatIntelPage() {
                     <threat.icon className={`h-4 w-4 ${threat.iconColor}`} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white font-mono text-sm">{threat.title}</h3>
+                    <h3 className="font-bold text-foreground font-mono text-sm">{threat.title}</h3>
                     <p className="text-[10px] text-muted-foreground font-mono">{threat.location}</p>
                   </div>
                 </div>
                 <div
                   onClick={() => toggleExpand(threat.id)}
-                  className="flex items-center gap-1 hover:bg-white/5 px-1 rounded cursor-pointer transition-colors"
+                  className="flex items-center gap-1 hover:bg-accent/20 px-1 rounded cursor-pointer transition-colors"
                 >
                   <span className={`font-mono text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${levelConfig[threat.level].bg} ${levelConfig[threat.level].text}`}>
                     {threat.level}
@@ -733,7 +733,7 @@ export default function ThreatIntelPage() {
               )}
             </div>
 
-            <div className="px-5 py-3 border-t border-border/40 bg-black/20 flex items-center justify-between">
+            <div className="px-5 py-3 border-t border-border/40 bg-secondary/40 flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-muted-foreground/60">
                 <Clock className="h-3 w-3" />
                 <span className="font-mono text-[10px]">{threat.time}</span>

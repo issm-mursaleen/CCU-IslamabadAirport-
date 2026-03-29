@@ -260,7 +260,6 @@ export default function QRFPage() {
           <div>
             <h1 className="text-xl font-bold tracking-tight">QRF Threat Response</h1>
             <p className="text-xs text-muted-foreground font-mono">
-              MOD-01 — Real-time GPS Tracking & Capability-based Dispatch
             </p>
           </div>
         </div>

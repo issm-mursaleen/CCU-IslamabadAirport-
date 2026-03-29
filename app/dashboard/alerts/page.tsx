@@ -166,7 +166,6 @@ export default function AlertsPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">WhatsApp Alert System</h1>
-            <p className="text-xs text-muted-foreground font-mono">MOD-05 — Notifications, Delivery Tracking & Escalation</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
