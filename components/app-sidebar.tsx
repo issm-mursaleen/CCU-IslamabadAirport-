@@ -16,7 +16,6 @@ import {
   Moon,
   Cctv,
   Car,
-  BarChart3,
   AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
@@ -114,7 +113,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <Sidebar variant="inset" {...props}>
+    <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -123,7 +122,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-tactical-green/20 border border-tactical-green/40">
                   <Radio className="size-4 text-tactical-green" />
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                   <span className="truncate font-bold tracking-wider text-tactical-green font-mono text-xs">
                     ISSM
                   </span>
@@ -138,7 +137,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] tracking-[0.2em] text-muted-foreground font-mono">
+          <SidebarGroupLabel className="text-[10px] tracking-[0.2em] text-muted-foreground font-mono transition-opacity duration-300 ease-in-out">
             OVERVIEW
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -164,7 +163,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] tracking-[0.2em] text-muted-foreground font-mono">
+          <SidebarGroupLabel className="text-[10px] tracking-[0.2em] text-muted-foreground font-mono transition-opacity duration-300 ease-in-out">
             MODULES
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -177,8 +176,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     isActive={pathname === item.url}
                   >
                     <Link href={item.url} className="relative">
-                      <item.icon className="h-4 w-4" />
-                      <span className="font-mono text-xs tracking-wide">
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span className="font-mono text-xs tracking-wide group-data-[collapsible=icon]:hidden">
                         {item.title}
                       </span>
                       {"badge" in item && item.badge && (
@@ -208,7 +207,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       OP
                     </AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
+                  <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                     <span className="truncate font-semibold font-mono text-xs">
                       Operator-01
                     </span>

@@ -51,10 +51,18 @@ const ALERTS = [
   { id: 6, title: "Unauthorized Vehicle", details: "KCH 900X • Unknown • Motorcycle", type: "unauthorized" },
 ];
 
+type VehicleEntry = (typeof VEHICLE_ENTRIES)[number];
+type AccessAlert = (typeof ALERTS)[number];
+type SelectedTarget = VehicleEntry | AccessAlert;
+
+function isVehicleEntry(t: SelectedTarget): t is VehicleEntry {
+  return "driver" in t;
+}
+
 export default function VehicleAccessPage() {
   const [filter, setFilter] = useState<string>("authorized");
   const [search, setSearch] = useState("");
-  const [selectedTarget, setSelectedTarget] = useState<any>(null);
+  const [selectedTarget, setSelectedTarget] = useState<SelectedTarget | null>(null);
   const [cameraExpanded, setCameraExpanded] = useState(false);
 
   const filteredEntries = VEHICLE_ENTRIES.filter((entry) => {
@@ -303,17 +311,29 @@ export default function VehicleAccessPage() {
             onClick={() => setSelectedTarget(null)}
           />
           <div className="relative w-full max-w-md bg-card border border-border/60 rounded-xl shadow-2xl flex flex-col mx-4 overflow-hidden fade-in-up">
-            
+            {(() => {
+              const t = selectedTarget;
+              const isUnauthorized =
+                isVehicleEntry(t)
+                  ? t.status === "unauthorized"
+                  : t.type === "unauthorized";
+              const isFlagged =
+                isVehicleEntry(t)
+                  ? t.status === "flagged"
+                  : t.type === "flagged";
+
+              return (
+                <>
             {/* Modal Header */}
             <div className={`p-4 border-b border-border/50 flex items-center justify-between ${
-              selectedTarget.type === "unauthorized" || selectedTarget.status === "unauthorized" ? "bg-tactical-red/10" :
-              selectedTarget.type === "flagged" || selectedTarget.status === "flagged" ? "bg-tactical-amber/10" :
+              isUnauthorized ? "bg-tactical-red/10" :
+              isFlagged ? "bg-tactical-amber/10" :
               "bg-tactical-green/10"
             }`}>
               <div className="flex items-center gap-2">
                 <Car className="h-4 w-4 text-foreground/80" />
                 <span className="font-mono text-sm font-bold tracking-wide">
-                  {selectedTarget.title || "Vehicle Stop Details"}
+                  {isVehicleEntry(t) ? "Vehicle Stop Details" : t.title}
                 </span>
               </div>
               <button 
@@ -334,18 +354,20 @@ export default function VehicleAccessPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold tracking-tight">
-                    {selectedTarget.driver || selectedTarget.details?.split("•")[1]?.trim() || "Unknown Driver"}
+                    {isVehicleEntry(t)
+                      ? t.driver
+                      : t.details.split("•")[1]?.trim() || "Unknown Driver"}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="font-mono text-[10px] bg-secondary px-2 py-0.5 rounded tracking-wider text-muted-foreground">
-                      {selectedTarget.purpose || selectedTarget.title || "Subject"}
+                      {isVehicleEntry(t) ? t.purpose : t.title}
                     </span>
                     <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                      selectedTarget.type === "unauthorized" || selectedTarget.status === "unauthorized" ? "bg-tactical-red/20 text-tactical-red border border-tactical-red/30" :
-                      selectedTarget.type === "flagged" || selectedTarget.status === "flagged" ? "bg-tactical-amber/20 text-tactical-amber border border-tactical-amber/30" :
+                      isUnauthorized ? "bg-tactical-red/20 text-tactical-red border border-tactical-red/30" :
+                      isFlagged ? "bg-tactical-amber/20 text-tactical-amber border border-tactical-amber/30" :
                       "bg-tactical-green/20 text-tactical-green border border-tactical-green/30"
                     }`}>
-                      {selectedTarget.status || selectedTarget.type}
+                      {isVehicleEntry(t) ? t.status : t.type}
                     </span>
                   </div>
                 </div>
@@ -355,15 +377,21 @@ export default function VehicleAccessPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-secondary/20 border border-border/40 p-3 rounded-lg">
                   <span className="block font-mono text-[9px] uppercase tracking-wider text-muted-foreground mb-1">Time</span>
-                  <span className="font-mono text-sm font-bold">{selectedTarget.entryTime || "12:00 PM"}</span>
+                  <span className="font-mono text-sm font-bold">
+                    {isVehicleEntry(t) ? t.entryTime : "12:00 PM"}
+                  </span>
                 </div>
                 <div className="bg-secondary/20 border border-border/40 p-3 rounded-lg">
                   <span className="block font-mono text-[9px] uppercase tracking-wider text-muted-foreground mb-1">Vehicle Type</span>
-                  <span className="font-mono text-sm font-bold">{selectedTarget.type}</span>
+                  <span className="font-mono text-sm font-bold">
+                    {t.type}
+                  </span>
                 </div>
                 <div className="bg-secondary/20 border border-border/40 p-3 rounded-lg col-span-2">
                   <span className="block font-mono text-[9px] uppercase tracking-wider text-muted-foreground mb-1">License Plate / Details</span>
-                  <span className="font-mono text-sm font-bold tracking-widest">{selectedTarget.details?.split("•")[0]?.trim() || "KAB 123X"}</span>
+                  <span className="font-mono text-sm font-bold tracking-widest">
+                    {isVehicleEntry(t) ? t.plate : t.details.split("•")[0]?.trim() || "—"}
+                  </span>
                 </div>
               </div>
 
@@ -400,6 +428,9 @@ export default function VehicleAccessPage() {
               </div>
 
             </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

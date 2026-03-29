@@ -46,24 +46,31 @@ export default function TacticalMap({
   const routeLineRef = useRef<L.Polyline | null>(null);
   const cssLoadedRef = useRef(false);
 
-  const getVehicleIcon = (color: string, heading: number, selected: boolean) =>
-    L.divIcon({
+  /** Top-down sedan style (similar to navigation maps): light body, dark glass, red taillights, rotated by heading. */
+  const getVehicleIcon = (color: string, heading: number, selected: boolean) => {
+    const w = selected ? 44 : 38;
+    const h = selected ? 56 : 48;
+    const scale = selected ? 1.08 : 1;
+    return L.divIcon({
       className: "qrf-vehicle-marker",
       html: `
-        <div style="position:relative;width:${selected ? 30 : 26}px;height:${selected ? 30 : 26}px;transform:rotate(${heading}deg);">
-          <div style="position:absolute;inset:${selected ? "3px" : "4px"};background:#0d1117ee;border:2px solid ${color};border-radius:7px;display:flex;align-items:center;justify-content:center;box-shadow:${selected ? `0 0 12px ${color}66` : "0 0 0 transparent"};">
-            <svg xmlns="http://www.w3.org/2000/svg" width="${selected ? 14 : 12}" height="${selected ? 14 : 12}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 16H9m10 0h1a1 1 0 0 0 .94-1.34l-1.52-4.56A2 2 0 0 0 17.52 8H6.48a2 2 0 0 0-1.9 1.37L3.06 14a1 1 0 0 0 .94 1.32H5" />
-              <path d="M6 8 7 5h10l1 3" />
-              <circle cx="7" cy="16" r="2" />
-              <circle cx="17" cy="16" r="2" />
-            </svg>
-          </div>
+        <div class="qrf-vehicle-wrap" style="width:${w}px;height:${h}px;transform:rotate(${heading}deg) scale(${scale});filter:drop-shadow(0 3px 5px rgba(0,0,0,0.55));">
+          <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 40 52" style="display:block;overflow:visible;">
+            <ellipse cx="20" cy="26" rx="19" ry="24" fill="none" stroke="${color}" stroke-width="${selected ? 2.5 : 1.75}" opacity="0.9"/>
+            <path d="M20 5c5.5 0 9 3.2 10.5 7.2l1.2 8.5v14.6l-1.2 8.5c-1.5 4-5 7.2-10.5 7.2s-9-3.2-10.5-7.2l-1.2-8.5V20.7l1.2-8.5C11 8.2 14.5 5 20 5z" fill="#e8eaed" stroke="#b0b5bf" stroke-width="0.6"/>
+            <path d="M14 12h12l1 6H13l1-6z" fill="#1a1f26" opacity="0.95"/>
+            <rect x="12" y="20" width="16" height="14" rx="2.2" fill="#d1d5dc" stroke="#9aa0a8" stroke-width="0.35"/>
+            <path d="M14 36h12l1.2 6.2H12.8L14 36z" fill="#1a1f26" opacity="0.95"/>
+            <rect x="9" y="44.5" width="6" height="2.8" rx="0.6" fill="#c41e1e"/>
+            <rect x="25" y="44.5" width="6" height="2.8" rx="0.6" fill="#c41e1e"/>
+            <line x1="20" y1="22" x2="20" y2="32" stroke="#a8adb6" stroke-width="0.35" opacity="0.6"/>
+          </svg>
         </div>
       `,
-      iconSize: [selected ? 30 : 26, selected ? 30 : 26],
-      iconAnchor: [selected ? 15 : 13, selected ? 15 : 13],
+      iconSize: [w, h],
+      iconAnchor: [w / 2, h / 2],
     });
+  };
 
   // Inject Leaflet CSS via <link> tag (reliable across Next.js versions)
   useEffect(() => {
@@ -274,6 +281,13 @@ export default function TacticalMap({
         .leaflet-control-zoom a:hover {
           background: #161b22 !important;
           color: #00FF9D !important;
+        }
+        .qrf-vehicle-marker {
+          background: transparent !important;
+          border: none !important;
+        }
+        .qrf-vehicle-wrap {
+          transform-origin: center center;
         }
         .incident-marker {
           background: transparent !important;

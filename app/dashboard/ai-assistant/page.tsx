@@ -7,8 +7,8 @@ import {
   Loader2,
   Sparkles,
   Terminal,
-  AlertTriangle,
 } from "lucide-react";
+import { AssistantMessageContent } from "@/components/assistant-message-content";
 
 type Message = {
   id: string;
@@ -203,9 +203,7 @@ export default function AIAssistantPage() {
                       </span>
                     </div>
                     <div className="px-3 py-2 rounded-lg bg-accent/30 border border-border/40">
-                      <p className="font-mono text-[11px] text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                        {msg.content}
-                      </p>
+                      <AssistantMessageContent content={msg.content} />
                     </div>
                   </div>
                 </div>
