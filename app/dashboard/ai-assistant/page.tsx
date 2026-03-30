@@ -6,7 +6,6 @@ import {
   Send,
   Loader2,
   Sparkles,
-  Terminal,
 } from "lucide-react";
 import { AssistantMessageContent } from "@/components/assistant-message-content";
 
@@ -126,9 +125,6 @@ export default function AIAssistantPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">AI Assistant</h1>
-            <p className="text-xs text-muted-foreground font-mono">
-              MOD-06 — Natural Language Ops Intelligence (RAG)
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-tactical-green-dim border border-tactical-green/20">
@@ -146,17 +142,6 @@ export default function AIAssistantPage() {
         }`}
         style={{ animationDelay: "100ms" }}
       >
-        {/* Terminal header */}
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-secondary shrink-0">
-          <Terminal className="h-3.5 w-3.5 text-tactical-green" />
-          <span className="font-mono text-[10px] tracking-[0.15em] text-tactical-green/70">
-            issm-ai@ops ~ $
-          </span>
-          <span className="font-mono text-[10px] text-muted-foreground ml-auto">
-            knowledge-base.md loaded
-          </span>
-        </div>
-
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
           {messages.map((msg) => (

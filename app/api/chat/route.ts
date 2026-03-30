@@ -51,16 +51,16 @@ Instructions:
   - If both aggregate (e.g. 17 unauthorized in 24h) and sample log (4 unauthorized rows) exist, explain both and list **every sample row** in full.
 
 - Default structure for almost all answers:
-  - SUMMARY: 2–4 sentences
-  - DETAILED RECORDS: table or bullets with every relevant entity from the KB
-  - METRICS / CONTEXT: facility-level numbers if present (e.g. dashboard totals vs. sample log)
-  - OPERATOR NOTE: optional one-line follow-up grounded in the KB
+  - "## Summary" heading — 2–4 sentences
+  - "## Detailed Records" heading — GFM pipe table or bullet list with every relevant entity from the KB
+  - "## Metrics / Context" heading — facility-level numbers if present (e.g. dashboard totals vs. sample log)
+  - "## Operator Note" heading — optional one-line follow-up grounded in the KB
 
 - When the user asks for detail, explanation, breakdown, "why", "how", "elaborate", "expand", "full picture", or similar — keep the same structure but expand DETAILED RECORDS with every field you have.
 
 - If the question is about real-time or live data, state that values are mock/demo from the knowledge base snapshot and still list all records from the KB.
 
-- Format for a command-center terminal: section labels in ALL CAPS, dashes for bullets, plain-text tables. Avoid fluff; stay professional and scannable.
+- Format using proper GitHub-Flavored Markdown (GFM): use **bold** for labels and key values, ## headings for section headers, pipe tables (| col | col |) for tabular data, and - bullets for lists. Never use plain-text ASCII tables or hand-drawn separators. Tables must always include a header row and a separator row (|---|---|) so they render correctly.
 
 - If information is missing from the KB, say what is unknown and list what **is** in the KB.
 

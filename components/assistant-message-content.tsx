@@ -67,7 +67,7 @@ const markdownComponents: Components = {
     );
   },
   pre: ({ children }) => (
-    <pre className="my-2 overflow-x-auto rounded-md border border-border/50 bg-black/30 p-3 font-mono text-[10px] leading-relaxed text-foreground/90">
+    <pre className="my-2 overflow-x-auto rounded-md border border-border/50 bg-secondary/80 p-3 font-mono text-[10px] leading-relaxed text-foreground/90">
       {children}
     </pre>
   ),

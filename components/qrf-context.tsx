@@ -32,15 +32,19 @@ export type QRFTeam = {
   sector: string;
   lastUpdate: number;
   heading: number;
+  driver: string;
+  assignedTo: string;
+  destination: string;
+  eta: string;
 };
 
 /* ── Seed data ── */
 const seedTeams: QRFTeam[] = [
-  { id: "QRF-A", name: "QRF Alpha", callsign: "ALPHA-1", capabilities: ["armed", "patrol"], vehicle: "Toyota Hilux", personnel: 4, status: "available", lat: 33.7294, lng: 73.0931, sector: "F-6 / F-7", lastUpdate: 45, heading: 135 },
-  { id: "QRF-B", name: "QRF Bravo", callsign: "BRAVO-1", capabilities: ["armed", "k9"], vehicle: "Land Cruiser", personnel: 5, status: "available", lat: 33.6932, lng: 73.0478, sector: "G-8 / G-9", lastUpdate: 120, heading: 45 },
-  { id: "QRF-C", name: "QRF Charlie", callsign: "CHARLIE-1", capabilities: ["armed", "medical"], vehicle: "Hilux (Medical)", personnel: 4, status: "available", lat: 33.6678, lng: 73.0712, sector: "I-8 / I-9", lastUpdate: 30, heading: 270 },
-  { id: "QRF-D", name: "QRF Delta", callsign: "DELTA-1", capabilities: ["armed", "bomb_disposal"], vehicle: "Armoured APC", personnel: 6, status: "available", lat: 33.7156, lng: 73.0623, sector: "E-7 / Blue Area", lastUpdate: 90, heading: 0 },
-  { id: "QRF-E", name: "QRF Echo", callsign: "ECHO-1", capabilities: ["patrol"], vehicle: "Motorcycle Unit", personnel: 3, status: "available", lat: 33.6821, lng: 73.0318, sector: "G-10 / G-11", lastUpdate: 15, heading: 90 },
+  { id: "QRF-A", name: "QRF Alpha",   callsign: "ALPHA-1",   capabilities: ["armed", "patrol"],         vehicle: "Toyota Hilux",    personnel: 4, status: "available", lat: 33.7294, lng: 73.0931, sector: "F-6 / F-7",         lastUpdate: 45,  heading: 135, driver: "Sgt. Imran Malik",   assignedTo: "Ali Hassan",      destination: "Site Alpha – Main Gate",    eta: "4 min"   },
+  { id: "QRF-B", name: "QRF Bravo",   callsign: "BRAVO-1",   capabilities: ["armed", "k9"],             vehicle: "Land Cruiser",    personnel: 5, status: "available", lat: 33.6932, lng: 73.0478, sector: "G-8 / G-9",         lastUpdate: 120, heading: 45,  driver: "Cpl. Naveed Shah",    assignedTo: "Bilal Khan",      destination: "Site Bravo – Perimeter",    eta: "7 min"   },
+  { id: "QRF-C", name: "QRF Charlie", callsign: "CHARLIE-1", capabilities: ["armed", "medical"],        vehicle: "Hilux (Medical)", personnel: 4, status: "available", lat: 33.6678, lng: 73.0712, sector: "I-8 / I-9",         lastUpdate: 30,  heading: 270, driver: "Cpl. Tariq Mehmood",  assignedTo: "Kamran Yousuf",   destination: "Site Charlie – I-9 Sector", eta: "3 min"   },
+  { id: "QRF-D", name: "QRF Delta",   callsign: "DELTA-1",   capabilities: ["armed", "bomb_disposal"],  vehicle: "Armoured APC",    personnel: 6, status: "available", lat: 33.7156, lng: 73.0623, sector: "E-7 / Blue Area",   lastUpdate: 90,  heading: 0,   driver: "Lt. Kamran Yousuf",   assignedTo: "Shahid Awan",     destination: "Blue Area – Checkpoint 4",  eta: "Standby" },
+  { id: "QRF-E", name: "QRF Echo",    callsign: "ECHO-1",    capabilities: ["patrol"],                  vehicle: "Motorcycle Unit", personnel: 3, status: "available", lat: 33.6821, lng: 73.0318, sector: "G-10 / G-11",       lastUpdate: 15,  heading: 90,  driver: "Cpl. Faraz Ali",      assignedTo: "Faraz Ali",       destination: "G-11 Markaz – Patrol Loop", eta: "2 min"   },
 ];
 
 const seedIncidents: Incident[] = [

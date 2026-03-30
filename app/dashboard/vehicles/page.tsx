@@ -138,7 +138,7 @@ export default function VehicleAccessPage() {
           {/* Live ANPR Camera Feed */}
           <div 
             onClick={() => setCameraExpanded(true)}
-            className="w-full lg:w-[45%] lg:min-w-[400px] min-h-[220px] bg-black rounded-lg border border-border/40 overflow-hidden relative shadow-sm flex flex-col group cursor-pointer"
+            className="w-full lg:w-[45%] lg:min-w-[400px] min-h-[220px] bg-card rounded-lg border border-border/40 overflow-hidden relative shadow-sm flex flex-col group cursor-pointer"
           >
             <video 
               src="/videos/Cameras/Gate_surveillance video.mp4" 
@@ -442,7 +442,7 @@ export default function VehicleAccessPage() {
             className="absolute inset-0 bg-black/80 backdrop-blur-md"
             onClick={() => setCameraExpanded(false)}
           />
-          <div className="relative w-full max-w-6xl bg-black border border-tactical-cyan/30 rounded-xl overflow-hidden shadow-[0_0_50px_rgba(0,255,157,0.1)] fade-in-up flex flex-col relative">
+          <div className="relative w-full max-w-6xl bg-card border border-tactical-cyan/30 rounded-xl overflow-hidden shadow-[0_0_50px_rgba(0,255,157,0.1)] fade-in-up flex flex-col relative">
             
             {/* Header Overlay */}
             <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded bg-black/60 border border-white/10 backdrop-blur-md pointer-events-none">

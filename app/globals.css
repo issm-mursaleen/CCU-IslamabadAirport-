@@ -59,23 +59,23 @@
 }
 
 :root {
-  --background: #F8FAFB;
-  --foreground: #1A1D23;
-  --card: #FFFFFF;
-  --card-foreground: #1A1D23;
-  --popover: #FFFFFF;
-  --popover-foreground: #1A1D23;
+  --background: #E8ECF2;
+  --foreground: #141820;
+  --card: #EFF2F7;
+  --card-foreground: #141820;
+  --popover: #EFF2F7;
+  --popover-foreground: #141820;
   --primary: #059669;
   --primary-foreground: #FFFFFF;
-  --secondary: #F1F5F9;
-  --secondary-foreground: #1A1D23;
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
-  --accent: #F1F5F9;
-  --accent-foreground: #1A1D23;
+  --secondary: #DDE2EA;
+  --secondary-foreground: #141820;
+  --muted: #DDE2EA;
+  --muted-foreground: #5A6578;
+  --accent: #D4D9E4;
+  --accent-foreground: #141820;
   --destructive: #DC2626;
-  --border: #E2E8F0;
-  --input: #E2E8F0;
+  --border: #C8D0DC;
+  --input: #C8D0DC;
   --ring: #059669;
   --chart-1: #059669;
   --chart-2: #0891B2;
@@ -83,13 +83,13 @@
   --chart-4: #DC2626;
   --chart-5: #7C3AED;
   --radius: 0.625rem;
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #1A1D23;
+  --sidebar: #DDE2EA;
+  --sidebar-foreground: #141820;
   --sidebar-primary: #059669;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F1F5F9;
-  --sidebar-accent-foreground: #1A1D23;
-  --sidebar-border: #E2E8F0;
+  --sidebar-accent: #CDD4DF;
+  --sidebar-accent-foreground: #141820;
+  --sidebar-border: #B8C2D0;
   --sidebar-ring: #059669;
 }
 
@@ -129,14 +129,14 @@
 
 /* ── Light mode tactical accent overrides ── */
 .light {
-  --color-tactical-green: #059669;
-  --color-tactical-cyan: #0891B2;
-  --color-tactical-amber: #D97706;
-  --color-tactical-red: #DC2626;
-  --color-tactical-green-dim: #05966922;
-  --color-tactical-cyan-dim: #0891B222;
-  --color-tactical-amber-dim: #D9770622;
-  --color-tactical-red-dim: #DC262622;
+  --color-tactical-green: #047857;
+  --color-tactical-cyan: #0369A1;
+  --color-tactical-amber: #B45309;
+  --color-tactical-red: #B91C1C;
+  --color-tactical-green-dim: #04785718;
+  --color-tactical-cyan-dim: #0369A118;
+  --color-tactical-amber-dim: #B4530918;
+  --color-tactical-red-dim: #B91C1C18;
 }
 
 @layer base {
@@ -160,7 +160,7 @@
 
 .light .tactical-grid {
   background-image:
-    radial-gradient(circle at 1px 1px, #CBD5E122 1px, transparent 0);
+    radial-gradient(circle at 1px 1px, #A0ADBF33 1px, transparent 0);
 }
 
 /* ── Scanline Effect ── */
@@ -235,12 +235,12 @@
 }
 
 .light .glow-border {
-  border: 1px solid #E2E8F0;
+  border: 1px solid #B8C2D0;
 }
 
 .light .glow-border:hover {
-  border-color: #05966644;
-  box-shadow: 0 0 24px -4px #05966616, inset 0 0 24px -12px #05966608;
+  border-color: #04785740;
+  box-shadow: 0 0 24px -4px #04785714, inset 0 0 24px -12px #04785708;
 }
 
 /* ── GPS Ping ── */
@@ -339,18 +339,48 @@
 }
 
 .light ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: #D4DAE4;
 }
 
 .light ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: #A8B2C2;
 }
 
 .light ::-webkit-scrollbar-thumb:hover {
-  background: #05966644;
+  background: #04785750;
 }
 
 .light .corner-accent::before,
 .light .corner-accent::after {
-  border-color: #05966944;
+  border-color: #04785740;
+}
+
+/* ── Tactical map popup — strip Leaflet chrome; inner HTML keeps its own bg ── */
+.tactical-popup,
+.tactical-popup .leaflet-popup-content-wrapper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+.tactical-popup .leaflet-popup-content {
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.tactical-popup .leaflet-popup-tip-container,
+.tactical-popup .leaflet-popup-tip {
+  display: none !important;
+}
+.tactical-tooltip,
+.tactical-tooltip.leaflet-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.tactical-tooltip::before {
+  display: none !important;
 }
