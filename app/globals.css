@@ -355,10 +355,9 @@
   border-color: #04785740;
 }
 
-/* ── Tactical map popup — strip ALL Leaflet default chrome ── */
+/* ── Tactical map popup — strip Leaflet chrome; inner HTML keeps its own bg ── */
 .tactical-popup,
-.tactical-popup .leaflet-popup-content-wrapper,
-.tactical-popup .leaflet-popup-content-wrapper * {
+.tactical-popup .leaflet-popup-content-wrapper {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -368,6 +367,8 @@
 }
 .tactical-popup .leaflet-popup-content {
   width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 .tactical-popup .leaflet-popup-tip-container,
 .tactical-popup .leaflet-popup-tip {
