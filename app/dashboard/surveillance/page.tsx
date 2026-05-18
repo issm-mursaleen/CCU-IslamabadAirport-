@@ -14,33 +14,107 @@ import {
   Eye,
   Camera,
   Users,
+  Lock,
 } from "lucide-react";
 
-// The mapped mock videos from the V2 folder
+// The complete matrix of all 12 camera feeds across the three floor levels
 const CAMERA_FEEDS = [
-  { id: "CAM-001", name: "MAIN GATE ENTRY", zone: "Entry Zone A", src: "/videos/Cameras/Gate_surveillance video.mp4", status: "live" },
-  { id: "CAM-002", name: "PERIMETER FENCE W", zone: "Perimeter Zone B", src: "/videos/Person Climbing Fence.mp4", status: "live" },
-  { id: "CAM-003", name: "INDUSTRIAL WAREHOUSE", zone: "Industrial Zone", src: "/videos/Cameras/Warehouse Cam 2.mp4", status: "live" },
-  { id: "CAM-004", name: "PARKING AREA", zone: "Vehicle Zone", src: "/videos/Cameras/car inside secure perimeter.mp4", status: "live" },
-  { id: "CAM-005", name: "PRODUCTION FACILITY", zone: "Production Zone", src: "/videos/Cameras/Forklift in Warehoues.mp4", status: "live" },
-  { id: "CAM-006", name: "RESTRICTED COMPOUND", zone: "Restricted Zone", src: "/videos/Normal Baggage Scanner With no alerts.mp4", status: "live" },
-  { id: "CAM-007", name: "LOADING DOCK", zone: "Logistics", src: "/videos/Baggage Scanner Screen View with alerts.mp4", status: "offline" },
-  { id: "CAM-008", name: "ADMIN BUILDING", zone: "Admin Zone", src: "/videos/Cameras/Guard1.mp4", status: "live" },
-  { id: "CAM-009", name: "VIP ACCESS LANE", zone: "VIP Zone", src: "/videos/VIP Convoy movement Video.mp4", status: "live" },
-  { id: "CAM-010", name: "EMERGENCY EXIT", zone: "Emergency Zone", src: "/videos/Cameras/guard2.mp4", status: "offline" },
-  { id: "CAM-011", name: "DRONE AERIAL F-6", zone: "Airspace", src: "/videos/Drone aerial facility view.mp4", status: "live" },
-  { id: "CAM-012", name: "DRONE CROWD MON", zone: "Airspace", src: "/videos/Drone surveillance vdeo for crowd.mp4", status: "live" },
-  { id: "CAM-013", name: "PARKING THEFT", zone: "Vehicle Zone", src: "/videos/Events/theif in parking lot.mp4", status: "live" },
-  { id: "CAM-014", name: "PATROL SECTOR 7", zone: "Perimeter", src: "/videos/Guards/Security Guard Patrolling.mp4", status: "live" }
+  // ── LEVEL 1 TERMINAL CAMERAS (4 FEEDS) ──
+  {
+    id: "CAM-112",
+    name: "L1 INTL DEPARTURES CORRIDOR",
+    zone: "Terminal L1",
+    src: "/anomalies/Congestion/Congestion.mp4",
+    status: "live"
+  },
+  {
+    id: "CAM-105",
+    name: "L1 RESTRICTED STAFF ZONE",
+    zone: "Terminal L1",
+    src: "/anomalies/Loitering/Loitering.mp4",
+    status: "live"
+  },
+  {
+    id: "CAM-108",
+    name: "L1 ARRIVALS HALL CAROUSEL 4",
+    zone: "Terminal L1",
+    src: "/anomalies/Unattended Baggage/Unattended baggage.mp4",
+    status: "live"
+  },
+  {
+    id: "CAM-121",
+    name: "L1 RESTRICTED APRON ENTRY",
+    zone: "Terminal L1",
+    src: "/anomalies/Unauthorized entry/unauthorized entry.mp4",
+    status: "live"
+  },
+
+  // ── LEVEL 2 TERMINAL CAMERAS (5 FEEDS) ──
+  {
+    id: "CAM-201",
+    name: "L2 PASSPORT CONTROL QUEUE",
+    zone: "Terminal L2",
+    src: "/anomalies_level2/Crowded.mp4",
+    status: "live"
+  },
+  {
+    id: "CAM-205",
+    name: "L2 VEHICULAR DEPARTURES LANE",
+    zone: "Terminal L2",
+    src: "/anomalies_level2/Lane_Congestion.mp4",
+    status: "live"
+  },
+  {
+    id: "CAM-208",
+    name: "L2 BAGGAGE SORTATION AREA",
+    zone: "Terminal L2",
+    src: "/anomalies_level2/Luggage Congestion.mp4",
+    status: "live"
+  },
+  {
+    id: "CAM-212",
+    name: "L2 CONVEYOR TRANSIT FLOOR",
+    zone: "Terminal L2",
+    src: "/anomalies_level2/Luggages Dropped from Conveyor Belt.mp4",
+    status: "live"
+  },
+  {
+    id: "CAM-215",
+    name: "L2 GATE 24 DEPARTURES LOUNGE",
+    zone: "Terminal L2",
+    src: "/anomalies_level2/Overcrowded.mp4",
+    status: "live"
+  },
+
+  // ── LEVEL 3 TERMINAL CAMERAS (3 FEEDS) ──
+  {
+    id: "CAM-301",
+    name: "L3 BOARDING CONCOURSE GATE 12",
+    zone: "Terminal L3",
+    src: "/anomalies_level3/Camera Fault.mp4",
+    status: "live"
+  },
+  {
+    id: "CAM-305",
+    name: "L3 JET BRIDGE ALPHA PASSAGE",
+    zone: "Terminal L3",
+    src: "/anomalies_level3/Jet Bridge.mp4",
+    status: "live"
+  },
+  {
+    id: "CAM-308",
+    name: "L3 JET BRIDGE BRAVO PASSAGE",
+    zone: "Terminal L3",
+    src: "/anomalies_level3/Jet Bridge 2.mp4",
+    status: "live"
+  }
 ];
 
 const CAMERA_GROUPS = [
-  { id: "all", name: "All Cameras", zones: [] },
-  { id: "entry", name: "Entry & Access", zones: ["Entry Zone A", "Admin Zone", "VIP Zone"] },
-  { id: "perimeter", name: "Perimeter", zones: ["Perimeter Zone B", "Perimeter", "Vehicle Zone"] },
-  { id: "industrial", name: "Industrial", zones: ["Industrial Zone", "Production Zone", "Logistics"] },
-  { id: "compound", name: "Compound", zones: ["Restricted Zone", "Emergency Zone"] },
-  { id: "airspace", name: "Airspace (Drones)", zones: ["Airspace"] },
+  { id: "all", name: "All Levels", zones: [] },
+  { id: "terminal-l1", name: "Level 1 Terminal", zones: ["Terminal L1"] },
+  { id: "terminal-l2", name: "Level 2 Terminal", zones: ["Terminal L2"] },
+  { id: "terminal-l3", name: "Level 3 Terminal", zones: ["Terminal L3"] },
 ];
 
 type EventLevel = "critical" | "high" | "medium" | "low";
@@ -71,36 +145,164 @@ const eventLevelConfig: Record<EventLevel, { bg: string; text: string; border: s
 
 const LIVE_EVENTS: LiveEvent[] = [
   {
-    id: 1, title: "Suspicious Loitering", camId: "CAM-001", location: "Main Gate Entry",
-    cam: "CAM-001 • Main Gate Entry", time: "14:23", timestamp: "06/03/2026, 14:23:11",
-    color: "text-tactical-amber", level: "high", confidence: 92, icon: Eye,
-    description: "Individual detected loitering near access gate for 12 minutes without authorization badge.",
-    action: "Dispatch guard team to verify identity and intent.",
-    video: "/videos/Events/Suspicious%20Lottering.mp4",
+    id: 1,
+    title: "Queue Congestion Alert",
+    camId: "CAM-112",
+    location: "L1 Intl Departures Queue",
+    cam: "CAM-112 • Intl Departures",
+    time: "14:23",
+    timestamp: "06/03/2026, 14:23:11",
+    color: "text-tactical-amber",
+    level: "high",
+    confidence: 94,
+    icon: Users,
+    description: "AI Crowd Profiling detected high crowd build-up and queuing delays exceeding 15 minutes at departure control corridor.",
+    action: "Authorize additional screening gates. Dispatch line marshals to direct queue flow.",
+    video: "/anomalies/Congestion/Congestion.mp4",
   },
   {
-    id: 2, title: "Camera Obstruction", camId: "CAM-005", location: "Production Facility",
-    cam: "CAM-005 • Production Facility", time: "14:18", timestamp: "06/03/2026, 14:18:44",
-    color: "text-tactical-cyan", level: "medium", confidence: 87, icon: Camera,
-    description: "Camera lens obstruction detected at production facility. Possible deliberate tampering or accidental blockage.",
-    action: "Send maintenance team to inspect camera. Deploy roving guard to cover the area.",
-    video: "/videos/Events/Camera_obstruction_event_5ab20ea8c9.mp4",
+    id: 2,
+    title: "Suspicious Loitering",
+    camId: "CAM-105",
+    location: "L1 Restricted Staff Zone",
+    cam: "CAM-105 • Secure Corridor",
+    time: "14:18",
+    timestamp: "06/03/2026, 14:18:44",
+    color: "text-tactical-amber",
+    level: "high",
+    confidence: 91,
+    icon: Eye,
+    description: "Subject flagged loitering in vicinity of high-security staff access control card reader without badging in.",
+    action: "Send nearest patrol unit to intercept subject and verify security credentials.",
+    video: "/anomalies/Loitering/Loitering.mp4",
   },
   {
-    id: 3, title: "Unauthorized Entry", camId: "CAM-006", location: "Restricted Compound",
-    cam: "CAM-006 • Restricted Compound", time: "14:11", timestamp: "06/03/2026, 14:11:02",
-    color: "text-tactical-red", level: "critical", confidence: 96, icon: AlertTriangle,
-    description: "Individual breached restricted compound perimeter without valid access credentials. Multiple access control systems triggered.",
-    action: "Immediate lockdown of restricted area. Dispatch QRF team. Alert security supervisor.",
-    video: "/videos/Person%20Climbing%20Fence.mp4",
+    id: 3,
+    title: "Unattended Baggage Alert",
+    camId: "CAM-108",
+    location: "L1 Arrivals Hall Carousel 4",
+    cam: "CAM-108 • Baggage Claim",
+    time: "14:11",
+    timestamp: "06/03/2026, 14:11:02",
+    color: "text-tactical-red",
+    level: "critical",
+    confidence: 97,
+    icon: AlertTriangle,
+    description: "Left item detected. Object has been stationary for over 6 minutes without an associated passenger in immediate proximity.",
+    action: "Initiate local area evacuation protocol. Dispatch explosive disposal unit and cordon off Carousel 4.",
+    video: "/anomalies/Unattended Baggage/Unattended baggage.mp4",
   },
   {
-    id: 4, title: "Tailgating at Gate", camId: "CAM-001", location: "Main Gate Entry",
-    cam: "CAM-001 • Main Gate Entry", time: "13:58", timestamp: "06/03/2026, 13:58:30",
-    color: "text-tactical-amber", level: "high", confidence: 89, icon: Users,
-    description: "Two individuals detected piggybacking entry through access-controlled gate. Second person did not badge in.",
-    action: "Review badge logs. Identify and verify both individuals. Issue security awareness reminder.",
-    video: "/videos/Cameras/Gate_surveillance%20video.mp4",
+    id: 4,
+    title: "Unauthorized Entry Breach",
+    camId: "CAM-121",
+    location: "L1 Restricted Apron Entry",
+    cam: "CAM-121 • Apron Secure Access",
+    time: "13:58",
+    timestamp: "06/03/2026, 13:58:30",
+    color: "text-tactical-red",
+    level: "critical",
+    confidence: 98,
+    icon: Lock,
+    description: "Intrusion alarm triggered. Tailgate tailing incident detected at secure staff access gate leading to the active apron.",
+    action: "Lockdown secure apron corridor immediately. Alert terminal police and dispatch rapid QRF unit.",
+    video: "/anomalies/Unauthorized entry/unauthorized entry.mp4",
+  },
+  {
+    id: 5,
+    title: "Passport Control Overcrowding",
+    camId: "CAM-201",
+    location: "L2 Passport Control Queue",
+    cam: "CAM-201 • Passport Desks",
+    time: "13:42",
+    timestamp: "06/03/2026, 13:42:15",
+    color: "text-tactical-amber",
+    level: "high",
+    confidence: 93,
+    icon: Users,
+    description: "Critical capacity warning. Dynamic queue lines have filled to 90% capacity causing passenger bottlenecks.",
+    action: "Coordinate with immigration supervisors to activate backup check stations.",
+    video: "/anomalies_level2/Crowded.mp4",
+  },
+  {
+    id: 6,
+    title: "Drop-off Vehicular Congestion",
+    camId: "CAM-205",
+    location: "L2 Terminal Departures Lane",
+    cam: "CAM-205 • T2 Drop-off Area",
+    time: "13:30",
+    timestamp: "06/03/2026, 13:30:08",
+    color: "text-tactical-cyan",
+    level: "medium",
+    confidence: 88,
+    icon: Camera,
+    description: "Vehicular bottleneck. Double-parked passenger drop-off vehicles blocking terminal departure lanes.",
+    action: "Deploy traffic management units to clear lanes and redirect traffic to lower parking bays.",
+    video: "/anomalies_level2/Lane_Congestion.mp4",
+  },
+  {
+    id: 7,
+    title: "Baggage Sortation Blockage",
+    camId: "CAM-208",
+    location: "L2 Baggage Carousel Sortation",
+    cam: "CAM-208 • Baggage Sortation",
+    time: "13:15",
+    timestamp: "06/03/2026, 13:15:22",
+    color: "text-tactical-cyan",
+    level: "medium",
+    confidence: 89,
+    icon: Camera,
+    description: "Luggage congestion buildup flagged at sorting junctions, threatening automated carousel throughput.",
+    action: "Direct operations team to pause feeding conveyor tracks. Manual clearance required at junction 12.",
+    video: "/anomalies_level2/Luggage Congestion.mp4",
+  },
+  {
+    id: 8,
+    title: "Conveyor Spill Incident",
+    camId: "CAM-212",
+    location: "L2 Conveyor Transit Track",
+    cam: "CAM-212 • Conveyor Corridor",
+    time: "12:55",
+    timestamp: "06/03/2026, 12:55:40",
+    color: "text-tactical-amber",
+    level: "high",
+    confidence: 92,
+    icon: AlertTriangle,
+    description: "Baggage transit anomaly. Multiple bags fallen off secure conveyor track onto restricted transit floor.",
+    action: "Halt conveyor feed sequence. Dispatch sorting handler to manually retrieve luggage items.",
+    video: "/anomalies_level2/Luggages Dropped from Conveyor Belt.mp4",
+  },
+  {
+    id: 9,
+    title: "Lounge Overcapacity Alert",
+    camId: "CAM-215",
+    location: "L2 Gate 24 Departures Lounge",
+    cam: "CAM-215 • Gate 24 Lounge",
+    time: "12:40",
+    timestamp: "06/03/2026, 12:40:11",
+    color: "text-tactical-cyan",
+    level: "medium",
+    confidence: 86,
+    icon: Users,
+    description: "Gate area crowd density exceeds 85% safety limits during boarding delay of flight PK-301.",
+    action: "Instruct gate personnel to expedite boarding call or open backup seating lounges.",
+    video: "/anomalies_level2/Overcrowded.mp4",
+  },
+  {
+    id: 10,
+    title: "Camera Feed Fault",
+    camId: "CAM-301",
+    location: "L3 Boarding Concourse Gate 12",
+    cam: "CAM-301 • Gate 12 Lens",
+    time: "12:15",
+    timestamp: "06/03/2026, 12:15:55",
+    color: "text-tactical-red",
+    level: "critical",
+    confidence: 99,
+    icon: Camera,
+    description: "Hardware communication loss or video stream corruption flagged on Gate 12 high-resolution lens.",
+    action: "Initiate remote camera controller restart. Dispatch systems engineer to inspect physical PoE cables.",
+    video: "/anomalies_level3/Camera Fault.mp4",
   },
 ];
 
@@ -211,13 +413,12 @@ export default function SurveillancePage() {
     return () => clearInterval(id);
   }, []);
 
-  const displayedCams = layout === "1x1" ? 1 : layout === "2x2" ? 4 : 9;
-  
   const filteredFeeds = selectedGroup === "all" 
     ? CAMERA_FEEDS 
     : CAMERA_FEEDS.filter(cam => CAMERA_GROUPS.find(g => g.id === selectedGroup)?.zones.includes(cam.zone));
     
-  // Automatically adjust grid if there are fewer cameras in a category than layout slots
+  // Dynamic displayed cameras counts to support rendering all filtered items without cropping
+  const displayedCams = layout === "1x1" ? 1 : layout === "2x2" ? 4 : filteredFeeds.length;
   const activeGrid = filteredFeeds.slice(0, displayedCams);
 
   const groupsWithCount = CAMERA_GROUPS.map(g => ({
@@ -308,7 +509,7 @@ export default function SurveillancePage() {
           <div className="flex items-center gap-3 md:gap-6">
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md bg-tactical-red/10 border border-tactical-red/30 text-tactical-red">
               <AlertTriangle className="h-3.5 w-3.5 blink" />
-              <span className="font-mono text-[10px] font-bold tracking-wider">6 ALARMS</span>
+              <span className="font-mono text-[10px] font-bold tracking-wider">10 ALARMS</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-tactical-red/15 border border-tactical-red/40 text-tactical-red">
               <div className="h-2 w-2 rounded-full bg-tactical-red blink" />

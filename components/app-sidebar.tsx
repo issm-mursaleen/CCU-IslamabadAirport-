@@ -75,6 +75,11 @@ const data = {
       icon: Map,
     },
     {
+      title: "Overview",
+      url: "/dashboard/perimeter-map/overview",
+      icon: LayoutDashboard,
+    },
+    {
       title: "Guard Compliance",
       url: "/dashboard/compliance",
       icon: ShieldCheck,
@@ -117,17 +122,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-tactical-green/20 border border-tactical-green/40">
-                  <Radio className="size-4 text-tactical-green" />
+            <SidebarMenuButton size="lg" asChild className="hover:bg-accent/40">
+              <Link href="/dashboard" className="flex items-center gap-3">
+                <div className="flex aspect-square size-9 items-center justify-center rounded-lg bg-white border border-border/80 overflow-hidden shrink-0 p-0.5 shadow-sm">
+                  <img src="/islamabad-airport-logo.png" alt="Islamabad Airport Logo" className="w-full h-full object-contain" />
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                  <span className="truncate font-bold tracking-wider text-tactical-green font-mono text-xs">
-                    ISSM
+                <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                  <span className="truncate font-bold text-foreground font-sans text-xs tracking-tight">
+                    Islamabad Airport
                   </span>
-                  <span className="truncate text-[10px] text-muted-foreground font-mono tracking-wide">
-                    SEC OPS PLATFORM
+                  <span className="truncate text-[9px] text-tactical-cyan font-mono tracking-wider font-bold uppercase">
+                    Security C2 System
                   </span>
                 </div>
               </Link>
