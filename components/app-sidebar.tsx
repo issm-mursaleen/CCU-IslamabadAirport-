@@ -75,11 +75,6 @@ const data = {
       icon: Map,
     },
     {
-      title: "Overview",
-      url: "/dashboard/perimeter-map/overview",
-      icon: LayoutDashboard,
-    },
-    {
       title: "Guard Compliance",
       url: "/dashboard/compliance",
       icon: ShieldCheck,

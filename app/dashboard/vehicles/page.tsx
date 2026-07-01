@@ -99,7 +99,7 @@ export default function VehicleAccessPage() {
                   <span className="text-2xl font-bold">{METRICS.total}</span>
                 </div>
               </div>
-              
+
               {/* Authorized Card */}
               <div className="bg-card/40 border border-border/40 rounded-lg p-4 flex items-center gap-4 shadow-sm">
                 <div className="h-10 w-10 shrink-0 rounded-full bg-tactical-green/10 border border-tactical-green/30 flex items-center justify-center">
@@ -136,12 +136,12 @@ export default function VehicleAccessPage() {
           </div>
 
           {/* Live ANPR Camera Feed */}
-          <div 
+          <div
             onClick={() => setCameraExpanded(true)}
             className="w-full lg:w-[45%] lg:min-w-[400px] min-h-[220px] bg-card rounded-lg border border-border/40 overflow-hidden relative shadow-sm flex flex-col group cursor-pointer"
           >
-            <video 
-              src="/videos/Cameras/Gate_surveillance video.mp4" 
+            <video
+              src="/videos/plate_recognition_output_parking_area.mp4"
               autoPlay loop muted playsInline
               className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000"
             />
@@ -156,10 +156,10 @@ export default function VehicleAccessPage() {
               </div>
             </div>
             <div className="relative z-10 mt-auto p-3 bg-gradient-to-t from-black/80 to-transparent">
-               <span className="font-mono text-[10px] text-white/70 tracking-widest flex items-center gap-2">
-                 <div className="h-1 w-1 bg-tactical-green rounded-full blink" />
-                 SCANNING VEHICLES...
-               </span>
+              <span className="font-mono text-[10px] text-white/70 tracking-widest flex items-center gap-2">
+                <div className="h-1 w-1 bg-tactical-green rounded-full blink" />
+                SCANNING VEHICLES...
+              </span>
             </div>
             {/* Grid Overlay Effects */}
             <div className="absolute inset-0 z-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(0,255,157,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.1)_1px,transparent_1px)] bg-[size:30px_30px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_70%)]" />
@@ -181,7 +181,7 @@ export default function VehicleAccessPage() {
                 className="w-full bg-background/50 border border-border/60 rounded-md pl-9 pr-3 py-1.5 text-xs font-mono focus:outline-none focus:border-tactical-cyan/50 transition-colors"
               />
             </div>
-            
+
             {/* Filters */}
             <div className="flex items-center gap-2">
               {[
@@ -193,11 +193,10 @@ export default function VehicleAccessPage() {
                 <button
                   key={f.id}
                   onClick={() => setFilter(f.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-mono tracking-wide transition-colors ${
-                    filter === f.id
+                  className={`px-3 py-1.5 rounded-full text-xs font-mono tracking-wide transition-colors ${filter === f.id
                       ? "border border-tactical-cyan text-tactical-cyan bg-tactical-cyan/10"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
-                  }`}
+                    }`}
                 >
                   {f.label}
                 </button>
@@ -220,8 +219,8 @@ export default function VehicleAccessPage() {
               </thead>
               <tbody>
                 {filteredEntries.map((row) => (
-                  <tr 
-                    key={row.id} 
+                  <tr
+                    key={row.id}
                     onClick={() => setSelectedTarget(row)}
                     className="border-b border-border/20 hover:bg-accent/10 transition-colors group cursor-pointer"
                   >
@@ -241,17 +240,16 @@ export default function VehicleAccessPage() {
                       <span className="font-mono text-xs text-muted-foreground">{row.purpose}</span>
                     </td>
                     <td className="px-5 py-3 text-center">
-                      <span className={`font-mono text-[10px] font-bold tracking-widest uppercase ${
-                        row.status === "authorized" ? "text-tactical-green" :
-                        row.status === "unauthorized" ? "text-tactical-red" :
-                        "text-tactical-amber"
-                      }`}>
+                      <span className={`font-mono text-[10px] font-bold tracking-widest uppercase ${row.status === "authorized" ? "text-tactical-green" :
+                          row.status === "unauthorized" ? "text-tactical-red" :
+                            "text-tactical-amber"
+                        }`}>
                         {row.status}
                       </span>
                     </td>
                   </tr>
                 ))}
-                
+
                 {filteredEntries.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-5 py-12 text-center">
@@ -274,22 +272,20 @@ export default function VehicleAccessPage() {
           </div>
           <span className="text-[10px] font-mono font-bold text-muted-foreground">{ALERTS.length}</span>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {ALERTS.map((alert) => (
-            <div 
-              key={alert.id} 
+            <div
+              key={alert.id}
               onClick={() => setSelectedTarget(alert)}
               className="bg-secondary/30 hover:bg-secondary/50 border border-border/40 rounded-md p-3 flex flex-col gap-1 cursor-pointer transition-colors group"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className={`h-1.5 w-1.5 rounded-full ${
-                    alert.type === "unauthorized" ? "bg-tactical-red blink" : "bg-tactical-amber"
-                  }`} />
-                  <span className={`font-semibold text-xs tracking-wide ${
-                    alert.type === "unauthorized" ? "text-tactical-red/90" : "text-tactical-amber/90"
-                  }`}>
+                  <div className={`h-1.5 w-1.5 rounded-full ${alert.type === "unauthorized" ? "bg-tactical-red blink" : "bg-tactical-amber"
+                    }`} />
+                  <span className={`font-semibold text-xs tracking-wide ${alert.type === "unauthorized" ? "text-tactical-red/90" : "text-tactical-amber/90"
+                    }`}>
                     {alert.title}
                   </span>
                 </div>
@@ -306,7 +302,7 @@ export default function VehicleAccessPage() {
       {/* ── DETAILED INFO CARD OVERLAY ── */}
       {selectedTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div 
+          <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setSelectedTarget(null)}
           />
@@ -324,110 +320,108 @@ export default function VehicleAccessPage() {
 
               return (
                 <>
-            {/* Modal Header */}
-            <div className={`p-4 border-b border-border/50 flex items-center justify-between ${
-              isUnauthorized ? "bg-tactical-red/10" :
-              isFlagged ? "bg-tactical-amber/10" :
-              "bg-tactical-green/10"
-            }`}>
-              <div className="flex items-center gap-2">
-                <Car className="h-4 w-4 text-foreground/80" />
-                <span className="font-mono text-sm font-bold tracking-wide">
-                  {isVehicleEntry(t) ? "Vehicle Stop Details" : t.title}
-                </span>
-              </div>
-              <button 
-                onClick={() => setSelectedTarget(null)}
-                className="p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 space-y-6">
-              
-              {/* Identity Row */}
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-secondary border border-border/80 flex items-center justify-center shrink-0">
-                  <User className="h-8 w-8 text-muted-foreground/50" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold tracking-tight">
-                    {isVehicleEntry(t)
-                      ? t.driver
-                      : t.details.split("•")[1]?.trim() || "Unknown Driver"}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono text-[10px] bg-secondary px-2 py-0.5 rounded tracking-wider text-muted-foreground">
-                      {isVehicleEntry(t) ? t.purpose : t.title}
-                    </span>
-                    <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                      isUnauthorized ? "bg-tactical-red/20 text-tactical-red border border-tactical-red/30" :
-                      isFlagged ? "bg-tactical-amber/20 text-tactical-amber border border-tactical-amber/30" :
-                      "bg-tactical-green/20 text-tactical-green border border-tactical-green/30"
+                  {/* Modal Header */}
+                  <div className={`p-4 border-b border-border/50 flex items-center justify-between ${isUnauthorized ? "bg-tactical-red/10" :
+                      isFlagged ? "bg-tactical-amber/10" :
+                        "bg-tactical-green/10"
                     }`}>
-                      {isVehicleEntry(t) ? t.status : t.type}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Data Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-secondary/20 border border-border/40 p-3 rounded-lg">
-                  <span className="block font-mono text-[9px] uppercase tracking-wider text-muted-foreground mb-1">Time</span>
-                  <span className="font-mono text-sm font-bold">
-                    {isVehicleEntry(t) ? t.entryTime : "12:00 PM"}
-                  </span>
-                </div>
-                <div className="bg-secondary/20 border border-border/40 p-3 rounded-lg">
-                  <span className="block font-mono text-[9px] uppercase tracking-wider text-muted-foreground mb-1">Vehicle Type</span>
-                  <span className="font-mono text-sm font-bold">
-                    {t.type}
-                  </span>
-                </div>
-                <div className="bg-secondary/20 border border-border/40 p-3 rounded-lg col-span-2">
-                  <span className="block font-mono text-[9px] uppercase tracking-wider text-muted-foreground mb-1">License Plate / Details</span>
-                  <span className="font-mono text-sm font-bold tracking-widest">
-                    {isVehicleEntry(t) ? t.plate : t.details.split("•")[0]?.trim() || "—"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Tracking Timeline */}
-              <div>
-                <span className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-3">Live Tracking</span>
-                <div className="space-y-3 relative before:absolute before:inset-0 before:ml-2 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
-                  <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                    <div className="flex items-center justify-center w-6 h-6 rounded-full border border-white bg-secondary text-muted-foreground shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
-                      <div className="h-2 w-2 rounded-full bg-tactical-green blink" />
+                    <div className="flex items-center gap-2">
+                      <Car className="h-4 w-4 text-foreground/80" />
+                      <span className="font-mono text-sm font-bold tracking-wide">
+                        {isVehicleEntry(t) ? "Vehicle Stop Details" : t.title}
+                      </span>
                     </div>
-                    <div className="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] bg-card border border-border p-2 rounded shadow-sm">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <MapPin className="h-3 w-3 text-tactical-cyan" />
-                        <span className="font-mono text-[9px] font-bold">Main Gate P1</span>
+                    <button
+                      onClick={() => setSelectedTarget(null)}
+                      className="p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Modal Body */}
+                  <div className="p-6 space-y-6">
+
+                    {/* Identity Row */}
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-16 rounded-full bg-secondary border border-border/80 flex items-center justify-center shrink-0">
+                        <User className="h-8 w-8 text-muted-foreground/50" />
                       </div>
-                      <span className="font-mono text-[9px] text-muted-foreground block text-right tabular-nums">- 2 mins ago</span>
-                    </div>
-                  </div>
-                  
-                  <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
-                    <div className="flex items-center justify-center w-6 h-6 rounded-full border border-border bg-secondary text-muted-foreground shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
-                      <Clock className="h-3 w-3" />
-                    </div>
-                    <div className="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] bg-card border border-border p-2 rounded shadow-sm opacity-60">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        <span className="font-mono text-[9px] font-bold">Perimeter Cam 4</span>
+                      <div>
+                        <h3 className="text-xl font-bold tracking-tight">
+                          {isVehicleEntry(t)
+                            ? t.driver
+                            : t.details.split("•")[1]?.trim() || "Unknown Driver"}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="font-mono text-[10px] bg-secondary px-2 py-0.5 rounded tracking-wider text-muted-foreground">
+                            {isVehicleEntry(t) ? t.purpose : t.title}
+                          </span>
+                          <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${isUnauthorized ? "bg-tactical-red/20 text-tactical-red border border-tactical-red/30" :
+                              isFlagged ? "bg-tactical-amber/20 text-tactical-amber border border-tactical-amber/30" :
+                                "bg-tactical-green/20 text-tactical-green border border-tactical-green/30"
+                            }`}>
+                            {isVehicleEntry(t) ? t.status : t.type}
+                          </span>
+                        </div>
                       </div>
-                      <span className="font-mono text-[9px] text-muted-foreground block text-right tabular-nums">- 15 mins ago</span>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-            </div>
+                    {/* Data Grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-secondary/20 border border-border/40 p-3 rounded-lg">
+                        <span className="block font-mono text-[9px] uppercase tracking-wider text-muted-foreground mb-1">Time</span>
+                        <span className="font-mono text-sm font-bold">
+                          {isVehicleEntry(t) ? t.entryTime : "12:00 PM"}
+                        </span>
+                      </div>
+                      <div className="bg-secondary/20 border border-border/40 p-3 rounded-lg">
+                        <span className="block font-mono text-[9px] uppercase tracking-wider text-muted-foreground mb-1">Vehicle Type</span>
+                        <span className="font-mono text-sm font-bold">
+                          {t.type}
+                        </span>
+                      </div>
+                      <div className="bg-secondary/20 border border-border/40 p-3 rounded-lg col-span-2">
+                        <span className="block font-mono text-[9px] uppercase tracking-wider text-muted-foreground mb-1">License Plate / Details</span>
+                        <span className="font-mono text-sm font-bold tracking-widest">
+                          {isVehicleEntry(t) ? t.plate : t.details.split("•")[0]?.trim() || "—"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Tracking Timeline */}
+                    <div>
+                      <span className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-3">Live Tracking</span>
+                      <div className="space-y-3 relative before:absolute before:inset-0 before:ml-2 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
+                        <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full border border-white bg-secondary text-muted-foreground shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                            <div className="h-2 w-2 rounded-full bg-tactical-green blink" />
+                          </div>
+                          <div className="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] bg-card border border-border p-2 rounded shadow-sm">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <MapPin className="h-3 w-3 text-tactical-cyan" />
+                              <span className="font-mono text-[9px] font-bold">Main Gate P1</span>
+                            </div>
+                            <span className="font-mono text-[9px] text-muted-foreground block text-right tabular-nums">- 2 mins ago</span>
+                          </div>
+                        </div>
+
+                        <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full border border-border bg-secondary text-muted-foreground shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                            <Clock className="h-3 w-3" />
+                          </div>
+                          <div className="w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] bg-card border border-border p-2 rounded shadow-sm opacity-60">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <MapPin className="h-3 w-3 text-muted-foreground" />
+                              <span className="font-mono text-[9px] font-bold">Perimeter Cam 4</span>
+                            </div>
+                            <span className="font-mono text-[9px] text-muted-foreground block text-right tabular-nums">- 15 mins ago</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
                 </>
               );
             })()}
@@ -438,12 +432,12 @@ export default function VehicleAccessPage() {
       {/* ── CAMERA EXPANDED OVERLAY ── */}
       {cameraExpanded && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div 
+          <div
             className="absolute inset-0 bg-black/80 backdrop-blur-md"
             onClick={() => setCameraExpanded(false)}
           />
           <div className="relative w-full max-w-6xl bg-card border border-tactical-cyan/30 rounded-xl overflow-hidden shadow-[0_0_50px_rgba(0,255,157,0.1)] fade-in-up flex flex-col relative">
-            
+
             {/* Header Overlay */}
             <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded bg-black/60 border border-white/10 backdrop-blur-md pointer-events-none">
               <div className="h-2 w-2 rounded-full bg-tactical-red blink" />
@@ -451,7 +445,7 @@ export default function VehicleAccessPage() {
             </div>
 
             {/* Close Button */}
-            <button 
+            <button
               onClick={() => setCameraExpanded(false)}
               className="absolute top-4 right-4 z-20 p-2 rounded bg-black/60 border border-white/10 backdrop-blur-md hover:bg-white/20 text-white transition-colors cursor-pointer"
             >
@@ -459,12 +453,12 @@ export default function VehicleAccessPage() {
             </button>
 
             {/* The Huge Video */}
-            <video 
-              src="/videos/Cameras/Gate_surveillance video.mp4" 
+            <video
+              src="/videos/plate_recognition_output_parking_area.mp4"
               autoPlay loop muted playsInline
               className="w-full h-auto max-h-[85vh] object-cover pointer-events-none"
             />
-            
+
             {/* Bottom Info Overlays */}
             <div className="absolute bottom-6 left-6 z-20 flex flex-wrap items-center gap-2 md:gap-4 pointer-events-none">
               <div className="px-3 py-2 bg-black/60 border border-tactical-green/30 backdrop-blur-md rounded">
@@ -480,7 +474,7 @@ export default function VehicleAccessPage() {
                 <span className="font-mono text-[10px] md:text-xs text-white font-bold tracking-widest">1080P/60FPS</span>
               </div>
             </div>
-            
+
             {/* Grid Mask */}
             <div className="absolute inset-0 z-10 pointer-events-none opacity-20 bg-[linear-gradient(rgba(0,255,157,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.1)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_80%)]" />
           </div>

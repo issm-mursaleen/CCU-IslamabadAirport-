@@ -29,49 +29,37 @@ const mockMarkers: InteractiveMarker[] = [
     id: "CAM-PTB-CONG",
     level: 1,
     type: "camera",
-    name: "CAM-112 (Intl Departures Queue)",
+    name: "CAM-112 (L1 Departures Queue Counter)",
     x: 56,
     y: 45,
     status: "alert",
-    details: "ANOMALY DETECTED: Congestion and high crowd density at departures corridor.",
-    videoUrl: "/anomalies/Congestion/Congestion.mp4",
+    details: "ANOMALY DETECTED: People in Queue Counter shows high queue density at departures corridor.",
+    videoUrl: "/videos/counter_people in que.mp4",
     angle: 45,
   },
   {
     id: "CAM-PTB-LOIT",
     level: 1,
     type: "camera",
-    name: "CAM-105 (Restricted Zone Corridor)",
+    name: "CAM-105 (L1 Immigration Queue Counter)",
     x: 70,
     y: 62,
     status: "alert",
-    details: "ANOMALY DETECTED: Suspicious loitering pattern flagged near secure staff access area.",
-    videoUrl: "/anomalies/Loitering/Loitering.mp4",
+    details: "ANOMALY DETECTED: People Queue Counter shows building congestion near secure checkpoint.",
+    videoUrl: "/videos/counter_people_que.mp4",
     angle: 135,
   },
   {
     id: "CAM-PTB-BAG",
     level: 1,
     type: "camera",
-    name: "CAM-108 (Arrivals Baggage Carousel 4)",
+    name: "CAM-108 (L1 Arrivals Baggage Claim Carousel 4)",
     x: 44,
     y: 31,
     status: "alert",
-    details: "ANOMALY DETECTED: Unattended baggage left near main arrivals hall carousel.",
-    videoUrl: "/anomalies/Unattended Baggage/Unattended baggage.mp4",
+    details: "ANOMALY DETECTED: Baggage Count tracker flagged high volume of luggage building up on Carousel 4.",
+    videoUrl: "/videos/bag_count_output baggeges.mp4",
     angle: 225,
-  },
-  {
-    id: "CAM-PTB-ENTRY",
-    level: 1,
-    type: "camera",
-    name: "CAM-121 (Restricted Apron Secure Access)",
-    x: 56,
-    y: 55,
-    status: "alert",
-    details: "ANOMALY DETECTED: Unauthorized entry / access card tailgate breach event.",
-    videoUrl: "/anomalies/Unauthorized entry/unauthorized entry.mp4",
-    angle: 315,
   },
   {
     id: "GATE-PTB-01",
@@ -109,60 +97,60 @@ const mockMarkers: InteractiveMarker[] = [
     id: "CAM-LVL2-CROWD",
     level: 2,
     type: "camera",
-    name: "CAM-201 (Passport Control Queue)",
+    name: "CAM-201 (L2 Passport Control FIA Counter)",
     x: 35,
     y: 48,
     status: "alert",
-    details: "ANOMALY DETECTED: Heavy crowd build-up and queuing congestion at international passport control.",
-    videoUrl: "/anomalies_level2/Crowded.mp4",
+    details: "ANOMALY DETECTED: FIA Counter capacity Warning. Crowd build-up and queuing congestion.",
+    videoUrl: "/videos/Fia_counter.mp4",
     angle: 45,
   },
   {
     id: "CAM-LVL2-LCONG",
     level: 2,
     type: "camera",
-    name: "CAM-205 (Terminal 2 Drop-off Lane)",
+    name: "CAM-205 (L2 Terminal Exit Vehicle Traffic)",
     x: 18,
     y: 76,
     status: "alert",
-    details: "ANOMALY DETECTED: Severe lane congestion and vehicular bottleneck at terminal entrance drop-off.",
-    videoUrl: "/anomalies_level2/Lane_Congestion.mp4",
+    details: "ANOMALY DETECTED: Vehicle Traffic Exit shows severe lane congestion at terminal exit point.",
+    videoUrl: "/videos/vehicle_traffic_output_exit.mp4",
     angle: 135,
   },
   {
     id: "CAM-LVL2-BCONG",
     level: 2,
     type: "camera",
-    name: "CAM-208 (Baggage Sortation Carousel)",
+    name: "CAM-208 (L2 Terminal Parking Area)",
     x: 46,
     y: 28,
     status: "alert",
-    details: "ANOMALY DETECTED: Baggage pile-up anomaly flagged near main secure claim sortation tracks.",
-    videoUrl: "/anomalies_level2/Luggage Congestion.mp4",
+    details: "ANOMALY DETECTED: Plate Recognition flags suspicious/unregistered vehicle in parking area.",
+    videoUrl: "/videos/plate_recognition_output_parking_area.mp4",
     angle: 385,
   },
   {
     id: "CAM-LVL2-DROP",
     level: 2,
     type: "camera",
-    name: "CAM-212 (Conveyor Belt Drop Area)",
+    name: "CAM-212 (L2 Counter Zone Tracker 1)",
     x: 78,
     y: 64,
     status: "alert",
-    details: "ANOMALY DETECTED: Items of luggage fallen off secure conveyor track onto restricted transit floor.",
-    videoUrl: "/anomalies_level2/Luggages Dropped from Conveyor Belt.mp4",
+    details: "ANOMALY DETECTED: Zone Tracker flags passenger crossing secure boundary lines near counter area 1.",
+    videoUrl: "/videos/zone_tracker_output_1_counter_area.mp4",
     angle: 315,
   },
   {
     id: "CAM-LVL2-OVER",
     level: 2,
     type: "camera",
-    name: "CAM-215 (Departure Gate 24 Lounge)",
+    name: "CAM-215 (L2 Counter Zone Tracker 2)",
     x: 52,
     y: 60,
     status: "alert",
-    details: "ANOMALY DETECTED: Critical lounge capacity exceeded. Crowd density anomaly at secure boarding area.",
-    videoUrl: "/anomalies_level2/Overcrowded.mp4",
+    details: "ANOMALY DETECTED: Zone Tracker monitoring crowd movements and securing boundaries near counter area 2.",
+    videoUrl: "/videos/zone_tracker_output_counter.mp4",
     angle: 45,
   },
   {
@@ -201,37 +189,13 @@ const mockMarkers: InteractiveMarker[] = [
     id: "CAM-LVL3-FAULT",
     level: 3,
     type: "camera",
-    name: "CAM-301 (Gate 12 Concourse)",
+    name: "CAM-301 (L3 Boarding Gate 12 Exit)",
     x: 42,
     y: 55,
     status: "alert",
-    details: "ANOMALY DETECTED: Hardware transmission fault / camera sensor loss on Gate 12 lens.",
-    videoUrl: "/anomalies_level3/Camera Fault.mp4",
+    details: "ANOMALY DETECTED: Face Detection active. Tracking passenger flows at airplane exit corridor.",
+    videoUrl: "/videos/face+_detection_airplane_Exit.mp4",
     angle: 45,
-  },
-  {
-    id: "CAM-LVL3-JET1",
-    level: 3,
-    type: "camera",
-    name: "CAM-305 (Jet Bridge Alpha Secure Path)",
-    x: 58,
-    y: 50,
-    status: "nominal",
-    details: "Nominal operational status. Boarding bridge corridor active and monitored.",
-    videoUrl: "/anomalies_level3/Jet Bridge.mp4",
-    angle: 335,
-  },
-  {
-    id: "CAM-LVL3-JET2",
-    level: 3,
-    type: "camera",
-    name: "CAM-308 (Jet Bridge Bravo Secure Path)",
-    x: 74,
-    y: 62,
-    status: "nominal",
-    details: "Nominal operational status. Secondary boarding bridge area active.",
-    videoUrl: "/anomalies_level3/Jet Bridge 2.mp4",
-    angle: 225,
   },
   {
     id: "GATE-LVL3-01",
@@ -255,8 +219,32 @@ const mockMarkers: InteractiveMarker[] = [
   },
 ];
 
-export default function PTBMapCanvas() {
-  const [activeLevel, setActiveLevel] = useState<1 | 2 | 3>(1);
+interface PTBMapCanvasProps {
+  searchQuery?: string;
+  activeLevel?: 1 | 2 | 3;
+  onLevelChange?: (level: 1 | 2 | 3) => void;
+  selectedCameraId?: string | null;
+  onSelectCamera?: (id: string | null) => void;
+}
+
+export default function PTBMapCanvas({
+  searchQuery = "",
+  activeLevel: externalActiveLevel,
+  onLevelChange,
+  selectedCameraId,
+  onSelectCamera,
+}: PTBMapCanvasProps = {}) {
+  const [localActiveLevel, setLocalActiveLevel] = useState<1 | 2 | 3>(1);
+  const activeLevel = externalActiveLevel !== undefined ? externalActiveLevel : localActiveLevel;
+
+  const handleLevelChange = (level: 1 | 2 | 3) => {
+    if (onLevelChange) {
+      onLevelChange(level);
+    } else {
+      setLocalActiveLevel(level);
+    }
+  };
+
   const [pdfjsLoaded, setPdfjsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState("Loading PDF library...");
@@ -273,6 +261,21 @@ export default function PTBMapCanvas() {
   const [expandedCamera, setExpandedCamera] = useState<InteractiveMarker | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Synchronize external camera selection from props
+  useEffect(() => {
+    if (selectedCameraId) {
+      const marker = mockMarkers.find((m) => m.id === selectedCameraId);
+      if (marker) {
+        setOpenTabs((prev) => {
+          if (prev.some((t) => t.id === marker.id)) return prev;
+          return [...prev, marker];
+        });
+        setActiveTabId(marker.id);
+        setIsPlayingFeed(true);
+      }
+    }
+  }, [selectedCameraId]);
 
   // Get currently active tab element
   const activeElement = openTabs.find((t) => t.id === activeTabId) || null;
@@ -395,11 +398,18 @@ export default function PTBMapCanvas() {
     });
 
   const filteredMarkers = currentMarkers.filter((m) => {
-    if (activeOverlay === "all") return true;
-    if (activeOverlay === "cameras" && m.type === "camera") return true;
-    if (activeOverlay === "guards" && m.type === "guard") return true;
-    if (activeOverlay === "gates" && m.type === "gate") return true;
-    return false;
+    let matchesOverlay = true;
+    if (activeOverlay === "cameras" && m.type !== "camera") matchesOverlay = false;
+    if (activeOverlay === "guards" && m.type !== "guard") matchesOverlay = false;
+    if (activeOverlay === "gates" && m.type !== "gate") matchesOverlay = false;
+
+    let matchesSearch = true;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      matchesSearch = m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q);
+    }
+
+    return matchesOverlay && matchesSearch;
   });
 
   const alertCount = currentMarkers.filter((m) => m.status === "alert").length;
@@ -433,7 +443,7 @@ export default function PTBMapCanvas() {
                 key={lvl.id}
                 onClick={() => {
                   setLoading(true);
-                  setActiveLevel(lvl.id as 1 | 2 | 3);
+                  handleLevelChange(lvl.id as 1 | 2 | 3);
                   // Keep tabs but reset active tab selection to keep coordinates consistent
                   setActiveTabId(null);
                 }}
@@ -563,6 +573,9 @@ export default function PTBMapCanvas() {
                           });
                           setActiveTabId(marker.id);
                           setIsPlayingFeed(true);
+                          if (onSelectCamera) {
+                            onSelectCamera(marker.id);
+                          }
                         },
                       }}
                     >
@@ -591,6 +604,9 @@ export default function PTBMapCanvas() {
                         });
                         setActiveTabId(marker.id);
                         setIsPlayingFeed(true);
+                        if (onSelectCamera) {
+                          onSelectCamera(marker.id);
+                        }
                       },
                     }}
                   >
@@ -632,6 +648,9 @@ export default function PTBMapCanvas() {
                       onClick={() => {
                         setActiveTabId(tab.id);
                         setIsPlayingFeed(true);
+                        if (onSelectCamera) {
+                          onSelectCamera(tab.id);
+                        }
                       }}
                       className={`flex items-center gap-3 px-6 py-4 border-r border-border/40 text-[12px] font-mono font-bold cursor-pointer transition-all ${isActive
                         ? `bg-card border-b-2 ${tabColor}`
@@ -647,9 +666,12 @@ export default function PTBMapCanvas() {
                             const updated = prev.filter((t) => t.id !== tab.id);
                             if (activeTabId === tab.id) {
                               if (updated.length > 0) {
-                                setActiveTabId(updated[updated.length - 1].id);
+                                const nextActiveId = updated[updated.length - 1].id;
+                                setActiveTabId(nextActiveId);
+                                if (onSelectCamera) onSelectCamera(nextActiveId);
                               } else {
                                 setActiveTabId(null);
+                                if (onSelectCamera) onSelectCamera(null);
                               }
                             }
                             return updated;
@@ -667,6 +689,9 @@ export default function PTBMapCanvas() {
                 onClick={() => {
                   setOpenTabs([]);
                   setActiveTabId(null);
+                  if (onSelectCamera) {
+                    onSelectCamera(null);
+                  }
                 }}
                 className="font-mono text-[11px] font-bold text-muted-foreground hover:text-foreground px-5 py-4 cursor-pointer border-l border-border/40"
               >
