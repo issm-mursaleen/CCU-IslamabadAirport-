@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 
-interface TeamMarker {
+interface GroupMarker {
   id: string;
   callsign: string;
   lat: number;
@@ -25,10 +25,10 @@ interface IncidentMarker {
 }
 
 interface TacticalMapProps {
-  teams: TeamMarker[];
+  groups: GroupMarker[];
   incident: IncidentMarker;
-  selectedTeam: string | null;
-  onSelectTeam: (id: string) => void;
+  selectedGroup: string | null;
+  onSelectGroup: (id: string) => void;
 }
 
 const statusColorMap: Record<string, string> = {
@@ -39,7 +39,7 @@ const statusColorMap: Record<string, string> = {
 };
 
 // Unique car body color per team slot (index-based)
-const TEAM_COLORS = [
+const GROUP_COLORS = [
   "#26C6DA", // teal
   "#EF5350", // red
   "#42A5F5", // blue
@@ -51,20 +51,20 @@ const TEAM_COLORS = [
 ];
 
 export default function TacticalMap({
-  teams,
+  groups,
   incident,
-  selectedTeam,
-  onSelectTeam,
+  selectedGroup,
+  onSelectGroup,
 }: TacticalMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const teamMarkersRef = useRef<Map<string, L.Marker>>(new Map());
+  const groupMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const incidentMarkerRef = useRef<L.Marker | null>(null);
   const routeLineRef = useRef<L.Polyline | null>(null);
   const cssLoadedRef = useRef(false);
 
   /** Top-down car icon — unique team color body, proper car silhouette with curves. */
-  const getVehicleIcon = (teamColor: string, statusColor: string, heading: number, selected: boolean) => {
+  const getVehicleIcon = (groupColor: string, statusColor: string, heading: number, selected: boolean) => {
     const w = selected ? 20 : 16;
     const h = selected ? 34 : 28;
     const scale = selected ? 1.06 : 1;
@@ -112,7 +112,7 @@ export default function TacticalMap({
               L 4 9
               C 5 5, 10 2, 16 2
               Z
-            " fill="${teamColor}" stroke="rgba(0,0,0,0.3)" stroke-width="0.8"/>
+            " fill="${groupColor}" stroke="rgba(0,0,0,0.3)" stroke-width="0.8"/>
 
             <!-- Hood highlight -->
             <path d="M10 3.5 C13 2.5, 19 2.5, 22 3.5 L 24 9 C 21 8, 11 8, 8 9 Z" fill="rgba(255,255,255,0.2)"/>
@@ -130,8 +130,8 @@ export default function TacticalMap({
             <path d="M10 43 C13 44, 19 44, 22 43 L 24 47 C 21 49, 11 49, 8 47 Z" fill="rgba(255,255,255,0.12)"/>
 
             <!-- Side mirrors -->
-            <path d="M4 17.5 C2.5 17.5, 1 18.5, 1 20 C1 21.5, 2.5 22.5, 4 22.5" fill="${teamColor}" stroke="rgba(0,0,0,0.3)" stroke-width="0.6"/>
-            <path d="M28 17.5 C29.5 17.5, 31 18.5, 31 20 C31 21.5, 29.5 22.5, 28 22.5" fill="${teamColor}" stroke="rgba(0,0,0,0.3)" stroke-width="0.6"/>
+            <path d="M4 17.5 C2.5 17.5, 1 18.5, 1 20 C1 21.5, 2.5 22.5, 4 22.5" fill="${groupColor}" stroke="rgba(0,0,0,0.3)" stroke-width="0.6"/>
+            <path d="M28 17.5 C29.5 17.5, 31 18.5, 31 20 C31 21.5, 29.5 22.5, 28 22.5" fill="${groupColor}" stroke="rgba(0,0,0,0.3)" stroke-width="0.6"/>
 
             <!-- Headlights -->
             <path d="M9 4.5 C11 3.5, 14 3, 16 3 L 16 5 C14 5, 11 5.5, 9.5 6.5 Z" fill="rgba(255,255,200,0.95)"/>
@@ -175,8 +175,8 @@ export default function TacticalMap({
     if (!mapContainerRef.current || mapRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [33.7, 73.06],
-      zoom: 13,
+      center: [33.5510, 72.8300],
+      zoom: 15,
       zoomControl: false,
       attributionControl: false,
     });
@@ -210,7 +210,7 @@ export default function TacticalMap({
     return () => {
       map.remove();
       mapRef.current = null;
-      teamMarkersRef.current.clear();
+      groupMarkersRef.current.clear();
       incidentMarkerRef.current = null;
       routeLineRef.current = null;
     };
@@ -221,20 +221,20 @@ export default function TacticalMap({
     const map = mapRef.current;
     if (!map) return;
 
-    const activeTeamIds = new Set(teams.map((t) => t.id));
-    for (const [id, marker] of teamMarkersRef.current.entries()) {
+    const activeTeamIds = new Set(groups.map((t) => t.id));
+    for (const [id, marker] of groupMarkersRef.current.entries()) {
       if (!activeTeamIds.has(id)) {
         marker.remove();
-        teamMarkersRef.current.delete(id);
+        groupMarkersRef.current.delete(id);
       }
     }
 
-    teams.forEach((team, idx) => {
-      const teamColor = TEAM_COLORS[idx % TEAM_COLORS.length];
-      const statusColor = statusColorMap[team.status] || "#00FF9D";
-      const existing = teamMarkersRef.current.get(team.id);
-      const selected = selectedTeam === team.id;
-      const vehicleIcon = getVehicleIcon(teamColor, statusColor, team.heading, selected);
+    groups.forEach((group, idx) => {
+      const groupColor = GROUP_COLORS[idx % GROUP_COLORS.length];
+      const statusColor = statusColorMap[group.status] || "#00FF9D";
+      const existing = groupMarkersRef.current.get(group.id);
+      const selected = selectedGroup === group.id;
+      const vehicleIcon = getVehicleIcon(groupColor, statusColor, group.heading, selected);
 
       const isLight = document.documentElement.classList.contains("light");
       const bg      = isLight ? "#ffffff"              : "#0d1117";
@@ -244,7 +244,7 @@ export default function TacticalMap({
       const etaClr  = isLight ? "#047857"              : "#00FF9D";
       const shadow  = isLight ? "0 8px 24px rgba(0,0,0,0.18)" : "0 8px 24px rgba(0,0,0,0.6)";
 
-      const popupHtml = (t: TeamMarker, color: string) => {
+      const popupHtml = (t: GroupMarker, color: string) => {
         const border   = isLight ? `${color}66` : `${color}55`;
         const headerBg = isLight ? `${color}12` : `${color}18`;
         return `
@@ -279,22 +279,22 @@ export default function TacticalMap({
       };
 
       if (existing) {
-        existing.setLatLng([team.lat, team.lng]);
+        existing.setLatLng([group.lat, group.lng]);
         existing.setIcon(vehicleIcon);
         existing.setZIndexOffset(selected ? 400 : 200);
         // Refresh popup content in case team data changed
-        if (existing.getPopup()) existing.setPopupContent(popupHtml(team, teamColor));
+        if (existing.getPopup()) existing.setPopupContent(popupHtml(group, groupColor));
       } else {
-        const marker = L.marker([team.lat, team.lng], { icon: vehicleIcon })
+        const marker = L.marker([group.lat, group.lng], { icon: vehicleIcon })
           .addTo(map)
-          .on("click", () => onSelectTeam(team.id));
+          .on("click", () => onSelectGroup(group.id));
 
         marker.bindTooltip(
-          `<div style="font-family:monospace;font-size:10px;letter-spacing:0.1em;color:${teamColor};font-weight:bold;background:#0d1117ee;border:1px solid ${teamColor}44;padding:3px 8px;border-radius:4px;">${team.callsign}</div>`,
+          `<div style="font-family:monospace;font-size:10px;letter-spacing:0.1em;color:${groupColor};font-weight:bold;background:#0d1117ee;border:1px solid ${groupColor}44;padding:3px 8px;border-radius:4px;">${group.callsign}</div>`,
           { permanent: true, direction: "bottom", offset: [0, 8], className: "tactical-tooltip" }
         );
 
-        marker.bindPopup(popupHtml(team, teamColor), {
+        marker.bindPopup(popupHtml(group, groupColor), {
           className: "tactical-popup",
           maxWidth: 260,
           offset: [0, -8],
@@ -306,18 +306,18 @@ export default function TacticalMap({
         marker.on("mouseout",  () => marker.closePopup());
 
         marker.setZIndexOffset(selected ? 400 : 200);
-        teamMarkersRef.current.set(team.id, marker);
+        groupMarkersRef.current.set(group.id, marker);
       }
 
       // Update tooltip callsign label color
-      const m = teamMarkersRef.current.get(team.id);
+      const m = groupMarkersRef.current.get(group.id);
       if (m) {
         m.setTooltipContent(
-          `<div style="font-family:monospace;font-size:10px;letter-spacing:0.1em;color:${teamColor};font-weight:bold;background:#0d1117ee;border:1px solid ${teamColor}44;padding:3px 8px;border-radius:4px;">${team.callsign}</div>`
+          `<div style="font-family:monospace;font-size:10px;letter-spacing:0.1em;color:${groupColor};font-weight:bold;background:#0d1117ee;border:1px solid ${groupColor}44;padding:3px 8px;border-radius:4px;">${group.callsign}</div>`
         );
       }
     });
-  }, [teams, selectedTeam, onSelectTeam]);
+  }, [groups, selectedGroup, onSelectGroup]);
 
   // Update incident marker
   useEffect(() => {
@@ -369,12 +369,12 @@ export default function TacticalMap({
       routeLineRef.current = null;
     }
 
-    if (selectedTeam) {
-      const team = teams.find((t) => t.id === selectedTeam);
-      if (team) {
+    if (selectedGroup) {
+      const group = groups.find((t) => t.id === selectedGroup);
+      if (group) {
         routeLineRef.current = L.polyline(
           [
-            [team.lat, team.lng],
+            [group.lat, group.lng],
             [incident.lat, incident.lng],
           ],
           {
@@ -386,7 +386,7 @@ export default function TacticalMap({
         ).addTo(map);
       }
     }
-  }, [selectedTeam, teams, incident]);
+  }, [selectedGroup, groups, incident]);
 
   return (
     <div className="relative w-full h-full">

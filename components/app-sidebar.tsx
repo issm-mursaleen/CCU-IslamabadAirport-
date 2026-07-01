@@ -65,8 +65,8 @@ const data = {
       icon: Car,
     },
     {
-      title: "QRF Response",
-      url: "/dashboard/qrf",
+      title: "ASF Patrols",
+      url: "/dashboard/asf",
       icon: Crosshair,
     },
     {

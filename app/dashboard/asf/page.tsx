@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useAlerts } from "@/components/alert-context";
-import { useQRF, type IncidentStatus } from "@/components/qrf-context";
+import { useASF, type IncidentStatus, type ASFGroup } from "@/components/asf-context";
 import {
   Crosshair,
   Navigation,
@@ -85,21 +85,21 @@ const typeCodeColors: Record<string, { color: string; bg: string; border: string
   black: { color: "text-foreground", bg: "bg-muted/50", border: "border-border" },
 };
 
-export default function QRFPage() {
+export default function ASFPage() {
   const { addAlert } = useAlerts();
-  const { teams, setTeams, incidents, setIncidents } = useQRF();
+  const { groups, setGroups, incidents, setIncidents } = useASF();
   const [mounted, setMounted] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [incidentFilter, setIncidentFilter] = useState<string>("all");
-  const [showManageTeams, setShowManageTeams] = useState(false);
-  const [addingTeam, setAddingTeam] = useState(false);
-  const [newTeam, setNewTeam] = useState({
+  const [showManageGroups, setShowManageGroups] = useState(false);
+  const [addingGroup, setAddingGroup] = useState(false);
+  const [newGroup, setNewGroup] = useState({
     name: "",
     callsign: "",
     vehicle: "",
     personnel: "4",
-    sector: "",
+    zone: "",
     capabilities: [] as string[],
     lat: "33.70",
     lng: "73.06",
@@ -109,9 +109,11 @@ export default function QRFPage() {
 
   const activeIncident = incidents.find((inc) => inc.id === selectedIncident) || null;
 
-  /* rank teams by distance + capability for selected incident */
-  const rankedTeams = activeIncident
-    ? [...teams]
+  const activeZone = activeIncident ? (activeIncident.site.includes("Zone A") ? "Zone A" : activeIncident.site.includes("Zone C") ? "Zone C" : "Zone B") : "Unassigned";
+
+  /* rank groups by distance + capability for selected incident */
+  const rankedGroups = activeIncident
+    ? [...groups]
         .filter((t) => t.capabilities.includes(activeIncident.requiredCap))
         .map((t) => ({
           ...t,
@@ -119,26 +121,31 @@ export default function QRFPage() {
           eta: Math.round(
             (haversine(t.lat, t.lng, activeIncident.lat, activeIncident.lng) / 40) * 60
           ),
+          isSameZone: t.zone === activeZone
         }))
-        .sort((a, b) => a.distance - b.distance)
+        .sort((a, b) => {
+          if (a.isSameZone && !b.isSameZone) return -1;
+          if (!a.isSameZone && b.isSameZone) return 1;
+          return a.distance - b.distance;
+        })
     : [];
 
   const handleDispatch = useCallback(() => {
-    if (!selectedTeam || !selectedIncident) return;
+    if (!selectedGroup || !selectedIncident) return;
     const inc = incidents.find((i) => i.id === selectedIncident);
-    const team = teams.find((t) => t.id === selectedTeam);
-    if (!inc || !team) return;
+    const group = groups.find((t) => t.id === selectedGroup);
+    if (!inc || !group) return;
 
     setIncidents((prev) =>
       prev.map((i) =>
         i.id === selectedIncident
-          ? { ...i, status: "dispatched" as IncidentStatus, assignedTeam: selectedTeam }
+          ? { ...i, status: "dispatched" as IncidentStatus, assignedGroup: selectedGroup }
           : i
       )
     );
-    setTeams((prev) =>
+    setGroups((prev) =>
       prev.map((t) =>
-        t.id === selectedTeam ? { ...t, status: "en_route" } : t
+        t.id === selectedGroup ? { ...t, status: "en_route" } : t
       )
     );
 
@@ -148,20 +155,20 @@ export default function QRFPage() {
       priority: inc.typeCode === "red" || inc.typeCode === "black" ? "critical" : "high",
       recipient: "Duty Manager",
       recipientPhone: "+92 300 1234567",
-      message: `DISPATCH: ${inc.id} — ${inc.type} at ${inc.site}. ${team.name} (${team.callsign}) dispatched. ETA ${Math.round((haversine(team.lat, team.lng, inc.lat, inc.lng) / 40) * 60)} min.`,
-      triggeredBy: "MOD-01 (QRF Auto)",
+      message: `DISPATCH: ${inc.id} — ${inc.type} at ${inc.site}. ${group.name} (${group.callsign}) dispatched. ETA ${Math.round((haversine(group.lat, group.lng, inc.lat, inc.lng) / 40) * 60)} min.`,
+      triggeredBy: "MOD-01 (ASF Auto)",
     });
 
-    // Auto-alert: notify team lead
+    // Auto-alert: notify group lead
     addAlert({
       type: "incident",
       priority: inc.typeCode === "red" || inc.typeCode === "black" ? "critical" : "high",
-      recipient: `${team.callsign} Lead`,
+      recipient: `${group.callsign} Lead`,
       recipientPhone: "+92 301 XXXXXXX",
       message: `RESPOND: ${inc.id} at ${inc.site}. ${inc.description}. Respond immediately.`,
-      triggeredBy: "MOD-01 (QRF Auto)",
+      triggeredBy: "MOD-01 (ASF Auto)",
     });
-  }, [selectedTeam, selectedIncident, incidents, teams, addAlert]);
+  }, [selectedGroup, selectedIncident, incidents, groups, addAlert]);
 
   const handleResolve = useCallback(() => {
     if (!selectedIncident) return;
@@ -174,15 +181,15 @@ export default function QRFPage() {
           : i
       )
     );
-    // Free the assigned team
-    if (inc.assignedTeam) {
-      setTeams((prev) =>
+    // Free the assigned group
+    if (inc.assignedGroup) {
+      setGroups((prev) =>
         prev.map((t) =>
-          t.id === inc.assignedTeam ? { ...t, status: "available" } : t
+          t.id === inc.assignedGroup ? { ...t, status: "available" } : t
         )
       );
     }
-    setSelectedTeam(null);
+    setSelectedGroup(null);
 
     // Auto-alert: notify about resolution
     addAlert({
@@ -190,27 +197,27 @@ export default function QRFPage() {
       priority: "normal",
       recipient: "Duty Manager",
       recipientPhone: "+92 300 1234567",
-      message: `RESOLVED: ${inc.id} — ${inc.type} at ${inc.site} has been resolved. ${inc.assignedTeam ? `Team ${inc.assignedTeam} released back to available.` : ""}`,
-      triggeredBy: "MOD-01 (QRF Auto)",
+      message: `RESOLVED: ${inc.id} — ${inc.type} at ${inc.site} has been resolved. ${inc.assignedGroup ? `Group ${inc.assignedGroup} released back to available.` : ""}`,
+      triggeredBy: "MOD-01 (ASF Auto)",
     });
   }, [selectedIncident, incidents, addAlert]);
 
-  const handleAddTeam = useCallback(() => {
-    if (!newTeam.name || !newTeam.callsign) return;
-    const id = `QRF-${String.fromCharCode(65 + teams.length)}`;
-    setTeams((prev) => [
+  const handleAddGroup = useCallback(() => {
+    if (!newGroup.name || !newGroup.callsign) return;
+    const id = `ASF-${String.fromCharCode(65 + groups.length)}`;
+    setGroups((prev) => [
       ...prev,
       {
         id,
-        name: newTeam.name,
-        callsign: newTeam.callsign,
-        capabilities: newTeam.capabilities.length > 0 ? newTeam.capabilities : ["patrol"],
-        vehicle: newTeam.vehicle || "Vehicle TBD",
-        personnel: parseInt(newTeam.personnel) || 4,
+        name: newGroup.name,
+        callsign: newGroup.callsign,
+        capabilities: newGroup.capabilities.length > 0 ? newGroup.capabilities : ["patrol"],
+        vehicle: newGroup.vehicle || "Vehicle TBD",
+        personnel: parseInt(newGroup.personnel) || 4,
         status: "available",
-        lat: parseFloat(newTeam.lat) || 33.7 + (Math.random() - 0.5) * 0.06,
-        lng: parseFloat(newTeam.lng) || 73.06 + (Math.random() - 0.5) * 0.06,
-        sector: newTeam.sector || "Unassigned",
+        lat: parseFloat(newGroup.lat) || 33.551 + (Math.random() - 0.5) * 0.02,
+        lng: parseFloat(newGroup.lng) || 72.830 + (Math.random() - 0.5) * 0.02,
+        zone: (newGroup.zone as ASFGroup["zone"]) || "Unassigned",
         lastUpdate: 0,
         heading: Math.floor(Math.random() * 360),
         driver: "TBD",
@@ -219,17 +226,17 @@ export default function QRFPage() {
         eta: "—",
       },
     ]);
-    setNewTeam({ name: "", callsign: "", vehicle: "", personnel: "4", sector: "", capabilities: [], lat: "33.70", lng: "73.06" });
-    setAddingTeam(false);
-  }, [newTeam, teams.length]);
+    setNewGroup({ name: "", callsign: "", vehicle: "", personnel: "4", zone: "", capabilities: [], lat: "33.5510", lng: "72.8300" });
+    setAddingGroup(false);
+  }, [newGroup, groups.length]);
 
-  const handleRemoveTeam = useCallback((teamId: string) => {
-    setTeams((prev) => prev.filter((t) => t.id !== teamId));
-    if (selectedTeam === teamId) setSelectedTeam(null);
-  }, [selectedTeam]);
+  const handleRemoveGroup = useCallback((groupId: string) => {
+    setGroups((prev) => prev.filter((t) => t.id !== groupId));
+    if (selectedGroup === groupId) setSelectedGroup(null);
+  }, [selectedGroup]);
 
   const toggleCapability = (cap: string) => {
-    setNewTeam((prev) => ({
+    setNewGroup((prev) => ({
       ...prev,
       capabilities: prev.capabilities.includes(cap)
         ? prev.capabilities.filter((c) => c !== cap)
@@ -262,18 +269,18 @@ export default function QRFPage() {
             <Crosshair className="h-5 w-5 text-tactical-green" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">QRF Threat Response</h1>
+            <h1 className="text-xl font-bold tracking-tight">ASF Zone Assignment</h1>
             <p className="text-xs text-muted-foreground font-mono">
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowManageTeams(true)}
+            onClick={() => setShowManageGroups(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-tactical-cyan/10 border border-tactical-cyan/30 text-tactical-cyan font-mono text-[10px] tracking-wide hover:bg-tactical-cyan/20 transition-colors"
           >
             <Users className="h-3.5 w-3.5" />
-            MANAGE TEAMS ({teams.length})
+            MANAGE TEAMS ({groups.length})
           </button>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-tactical-green-dim border border-tactical-green/20">
             <Satellite className="h-3.5 w-3.5 text-tactical-green" />
@@ -285,7 +292,7 @@ export default function QRFPage() {
         </div>
       </div>
 
-      {/* Main 3-column layout: Incidents | Map | Team Panel */}
+      {/* Main 3-column layout: Incidents | Map | Group Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_360px] gap-4">
 
         {/* ── INCIDENT LIST ── */}
@@ -345,7 +352,7 @@ export default function QRFPage() {
                     }`}
                     onClick={() => {
                       setSelectedIncident(inc.id);
-                      setSelectedTeam(null);
+                      setSelectedGroup(null);
                     }}
                   >
                     <div className="flex items-center justify-between mb-1">
@@ -371,11 +378,11 @@ export default function QRFPage() {
                       <span className="text-muted-foreground/40">|</span>
                       <span>{inc.reported}</span>
                     </div>
-                    {inc.assignedTeam && (
+                    {inc.assignedGroup && (
                       <div className="mt-1.5 flex items-center gap-1 font-mono text-[9px]">
                         <ShieldCheck className="h-2.5 w-2.5 text-tactical-cyan" />
                         <span className="text-tactical-cyan">
-                          Assigned: {teams.find((t) => t.id === inc.assignedTeam)?.callsign || inc.assignedTeam}
+                          Assigned: {groups.find((t) => t.id === inc.assignedGroup)?.callsign || inc.assignedGroup}
                         </span>
                       </div>
                     )}
@@ -417,7 +424,7 @@ export default function QRFPage() {
           {/* Leaflet Map area */}
           <div className="relative w-full" style={{ height: "520px" }}>
             <TacticalMap
-              teams={teams.map((t) => ({
+              groups={groups.map((t) => ({
                 id: t.id,
                 callsign: t.callsign,
                 lat: t.lat,
@@ -437,8 +444,8 @@ export default function QRFPage() {
                 lat: mapIncident.lat,
                 lng: mapIncident.lng,
               }}
-              selectedTeam={selectedTeam}
-              onSelectTeam={setSelectedTeam}
+              selectedGroup={selectedGroup}
+              onSelectGroup={setSelectedGroup}
             />
           </div>
 
@@ -465,7 +472,7 @@ export default function QRFPage() {
           </div>
         </div>
 
-        {/* ── RIGHT PANEL: Incident Detail + Team Dispatch ── */}
+        {/* ── RIGHT PANEL: Incident Detail + Group Dispatch ── */}
         <div className="space-y-3">
           {/* Selected incident detail or placeholder */}
           {activeIncident ? (
@@ -516,8 +523,8 @@ export default function QRFPage() {
                   </p>
                   <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
                     <div className="bg-accent/30 rounded px-2 py-1.5">
-                      <span className="text-muted-foreground block">SITE</span>
-                      <span className="text-foreground">{activeIncident.site}</span>
+                      <span className="text-muted-foreground block">ZONE</span>
+                      <span className="text-foreground">{activeZone}</span>
                     </div>
                     <div className="bg-accent/30 rounded px-2 py-1.5">
                       <span className="text-muted-foreground block">REQUIRED</span>
@@ -535,7 +542,7 @@ export default function QRFPage() {
                 </div>
               </div>
 
-              {/* Team selection — only show if incident is not resolved */}
+              {/* Group selection — only show if incident is not resolved */}
               {activeIncident.status !== "resolved" && (
                 <div
                   className={`glow-border rounded-lg bg-card noise-texture overflow-hidden ${
@@ -546,62 +553,67 @@ export default function QRFPage() {
                   <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40">
                     <Navigation className="h-3.5 w-3.5 text-tactical-green" />
                     <span className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground uppercase">
-                      {activeIncident.status === "pending" ? "Select Team (by distance)" : "Assigned Team"}
+                      {activeIncident.status === "pending" ? "Select Group (by distance)" : "Assigned Group"}
                     </span>
                   </div>
                   <div className="divide-y divide-border/30 max-h-[220px] overflow-y-auto">
-                    {rankedTeams.length > 0 ? rankedTeams.map((team, i) => (
+                    {rankedGroups.length > 0 ? rankedGroups.map((group, i) => (
                       <div
-                        key={team.id}
+                        key={group.id}
                         className={`px-4 py-2.5 cursor-pointer transition-all ${
-                          selectedTeam === team.id
+                          selectedGroup === group.id
                             ? "bg-tactical-green/5 border-l-2 border-l-tactical-green"
                             : "hover:bg-accent/20 border-l-2 border-l-transparent"
-                        } ${activeIncident.status !== "pending" && team.id !== activeIncident.assignedTeam ? "opacity-30 pointer-events-none" : ""}`}
+                        } ${activeIncident.status !== "pending" && group.id !== activeIncident.assignedGroup ? "opacity-30 pointer-events-none" : ""}`}
                         onClick={() => {
-                          if (activeIncident.status === "pending") setSelectedTeam(team.id);
+                          if (activeIncident.status === "pending") setSelectedGroup(group.id);
                         }}
                       >
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-[10px] text-muted-foreground w-4">#{i + 1}</span>
-                            <span className="font-mono text-xs font-bold">{team.callsign}</span>
-                            <div className={`h-1.5 w-1.5 rounded-full ${statusBg[team.status] || "bg-muted"}`} />
+                            <span className="font-mono text-xs font-bold">{group.callsign}</span>
+                            <div className={`h-1.5 w-1.5 rounded-full ${statusBg[group.status] || "bg-muted"}`} />
+                            {group.isSameZone && (
+                              <span className="ml-2 font-mono text-[8px] tracking-wider px-1.5 py-0.5 rounded bg-tactical-cyan/15 text-tactical-cyan border border-tactical-cyan/40">
+                                IN ZONE
+                              </span>
+                            )}
                           </div>
-                          <span className="font-mono text-[10px] text-tactical-cyan">{team.distance.toFixed(2)} km</span>
+                          <span className="font-mono text-[10px] text-tactical-cyan">{group.distance.toFixed(2)} km</span>
                         </div>
                         <div className="flex items-center gap-3 ml-6 text-[9px] font-mono text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <Clock className="h-2.5 w-2.5" />ETA ~{team.eta} min
+                            <Clock className="h-2.5 w-2.5" />ETA ~{group.eta} min
                           </span>
                           <span className="flex items-center gap-1">
-                            <Truck className="h-2.5 w-2.5" />{team.vehicle}
+                            <Truck className="h-2.5 w-2.5" />{group.vehicle}
                           </span>
-                          <span className={`capitalize ${statusColors[team.status] || ""}`}>
-                            {team.status.replace("_", " ")}
+                          <span className={`capitalize ${statusColors[group.status] || ""}`}>
+                            {group.status.replace("_", " ")}
                           </span>
                         </div>
 
                         {/* GPS readout for selected */}
-                        {selectedTeam === team.id && (
+                        {selectedGroup === group.id && (
                           <div className="mt-2 ml-6 p-2 rounded bg-secondary border border-border/50">
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[9px] font-mono">
                               <div>
                                 <span className="text-muted-foreground">LAT </span>
-                                <span className="text-tactical-green tabular-nums">{team.lat.toFixed(6)}°</span>
+                                <span className="text-tactical-green tabular-nums">{group.lat.toFixed(6)}°</span>
                               </div>
                               <div>
                                 <span className="text-muted-foreground">LNG </span>
-                                <span className="text-tactical-green tabular-nums">{team.lng.toFixed(6)}°</span>
+                                <span className="text-tactical-green tabular-nums">{group.lng.toFixed(6)}°</span>
                               </div>
                               <div>
                                 <span className="text-muted-foreground">HDG </span>
-                                <span className="text-foreground">{team.heading}°</span>
+                                <span className="text-foreground">{group.heading}°</span>
                               </div>
                               <div>
                                 <span className="text-muted-foreground">UPD </span>
-                                <span className={team.lastUpdate > 100 ? "text-tactical-amber" : "text-foreground"}>
-                                  {team.lastUpdate}s ago
+                                <span className={group.lastUpdate > 100 ? "text-tactical-amber" : "text-foreground"}>
+                                  {group.lastUpdate}s ago
                                 </span>
                               </div>
                             </div>
@@ -612,7 +624,7 @@ export default function QRFPage() {
                       <div className="px-4 py-6 text-center">
                         <XCircle className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
                         <p className="font-mono text-[10px] text-muted-foreground">
-                          No capable teams available for this incident type.
+                          No capable groups available for this incident type.
                         </p>
                       </div>
                     )}
@@ -622,21 +634,21 @@ export default function QRFPage() {
 
               {/* Action Buttons */}
               <div className="space-y-2">
-                {/* Dispatch — only for pending incidents with a selected team */}
+                {/* Dispatch — only for pending incidents with a selected group */}
                 {activeIncident.status === "pending" && (
                   <button
                     onClick={handleDispatch}
-                    disabled={!selectedTeam}
+                    disabled={!selectedGroup}
                     className={`w-full py-3 rounded-lg font-mono text-xs tracking-widest uppercase font-bold transition-all flex items-center justify-center gap-2 ${
-                      selectedTeam
+                      selectedGroup
                         ? "bg-tactical-green text-[#06080D] hover:bg-tactical-green/90 pulse-glow cursor-pointer"
                         : "bg-muted text-muted-foreground border border-border cursor-not-allowed"
                     }`}
                   >
                     <Send className="h-4 w-4" />
-                    {selectedTeam
-                      ? `Dispatch ${teams.find((t) => t.id === selectedTeam)?.callsign}`
-                      : "Select a team to dispatch"}
+                    {selectedGroup
+                      ? `Dispatch ${groups.find((t) => t.id === selectedGroup)?.callsign}`
+                      : "Select a group to dispatch"}
                   </button>
                 )}
 
@@ -668,15 +680,15 @@ export default function QRFPage() {
                 style={{ animationDelay: "400ms" }}
               >
                 <span className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground uppercase block mb-3">
-                  Signal Path
+                  ASF Zone Assignment Flow
                 </span>
                 <div className="flex items-center gap-1 flex-wrap">
                   {[
-                    { label: "Incident Logged", step: 0 },
-                    { label: "GPS Parsed", step: 1 },
-                    { label: "Haversine Rank", step: 2 },
-                    { label: "Dispatch", step: 3 },
-                    { label: "On Scene", step: 4 },
+                    { label: "Capture (Vehicle+Face)", step: 0 },
+                    { label: "Enrich (Zone Lookup)", step: 1 },
+                    { label: "Enrich (Group Search)", step: 2 },
+                    { label: "Alert Dispatch", step: 3 },
+                    { label: "Respond (On Scene)", step: 4 },
                     { label: "Resolved", step: 5 },
                   ].map((s, i) => {
                     const currentStep =
@@ -717,7 +729,7 @@ export default function QRFPage() {
                 No incident selected
               </p>
               <p className="font-mono text-[10px] text-muted-foreground/60">
-                Select an incident from the left panel to view details, dispatch a team, or mark it resolved.
+                Select an incident from the left panel to view details, dispatch a group, or mark it resolved.
               </p>
             </div>
           )}
@@ -725,12 +737,12 @@ export default function QRFPage() {
       </div>
 
       {/* ── MANAGE TEAMS OVERLAY ── */}
-      {showManageTeams && (
+      {showManageGroups && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => { setShowManageTeams(false); setAddingTeam(false); }}
+            onClick={() => { setShowManageGroups(false); setAddingGroup(false); }}
           />
 
           {/* Panel */}
@@ -739,21 +751,21 @@ export default function QRFPage() {
             <div className="flex items-center justify-between px-5 py-3 border-b border-border/60 shrink-0">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-tactical-cyan" />
-                <span className="font-mono text-sm font-bold tracking-wide">Manage QRF Teams</span>
+                <span className="font-mono text-sm font-bold tracking-wide">Manage ASF Groups</span>
                 <span className="font-mono text-[9px] text-muted-foreground bg-accent/50 px-1.5 py-0.5 rounded">
-                  {teams.length} teams
+                  {groups.length} groups
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setAddingTeam(true)}
+                  onClick={() => setAddingGroup(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-tactical-green text-[#06080D] font-mono text-[10px] font-bold tracking-wider hover:bg-tactical-green/90 transition-colors"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   ADD TEAM
                 </button>
                 <button
-                  onClick={() => { setShowManageTeams(false); setAddingTeam(false); }}
+                  onClick={() => { setShowManageGroups(false); setAddingGroup(false); }}
                   className="p-1.5 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="h-4 w-4" />
@@ -761,22 +773,22 @@ export default function QRFPage() {
               </div>
             </div>
 
-            {/* Add team form */}
-            {addingTeam && (
+            {/* Add group form */}
+            {addingGroup && (
               <div className="px-5 py-4 border-b border-border/60 bg-secondary/50 shrink-0">
                 <p className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground uppercase mb-3">
-                  New QRF Team
+                  New ASF Group
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider block mb-1">
-                      Team Name *
+                      Group Name *
                     </label>
                     <input
                       type="text"
-                      value={newTeam.name}
-                      onChange={(e) => setNewTeam((p) => ({ ...p, name: e.target.value }))}
-                      placeholder="e.g. QRF Foxtrot"
+                      value={newGroup.name}
+                      onChange={(e) => setNewGroup((p) => ({ ...p, name: e.target.value }))}
+                      placeholder="e.g. ASF Foxtrot"
                       className="w-full px-3 py-2 rounded-md bg-card border border-border text-xs font-mono placeholder:text-muted-foreground/40 focus:border-tactical-green/50 focus:outline-none"
                     />
                   </div>
@@ -786,8 +798,8 @@ export default function QRFPage() {
                     </label>
                     <input
                       type="text"
-                      value={newTeam.callsign}
-                      onChange={(e) => setNewTeam((p) => ({ ...p, callsign: e.target.value.toUpperCase() }))}
+                      value={newGroup.callsign}
+                      onChange={(e) => setNewGroup((p) => ({ ...p, callsign: e.target.value.toUpperCase() }))}
                       placeholder="e.g. FOXTROT-1"
                       className="w-full px-3 py-2 rounded-md bg-card border border-border text-xs font-mono placeholder:text-muted-foreground/40 focus:border-tactical-green/50 focus:outline-none"
                     />
@@ -798,8 +810,8 @@ export default function QRFPage() {
                     </label>
                     <input
                       type="text"
-                      value={newTeam.vehicle}
-                      onChange={(e) => setNewTeam((p) => ({ ...p, vehicle: e.target.value }))}
+                      value={newGroup.vehicle}
+                      onChange={(e) => setNewGroup((p) => ({ ...p, vehicle: e.target.value }))}
                       placeholder="e.g. Toyota Hilux"
                       className="w-full px-3 py-2 rounded-md bg-card border border-border text-xs font-mono placeholder:text-muted-foreground/40 focus:border-tactical-green/50 focus:outline-none"
                     />
@@ -810,8 +822,8 @@ export default function QRFPage() {
                     </label>
                     <input
                       type="number"
-                      value={newTeam.personnel}
-                      onChange={(e) => setNewTeam((p) => ({ ...p, personnel: e.target.value }))}
+                      value={newGroup.personnel}
+                      onChange={(e) => setNewGroup((p) => ({ ...p, personnel: e.target.value }))}
                       placeholder="4"
                       min="1"
                       max="20"
@@ -820,13 +832,13 @@ export default function QRFPage() {
                   </div>
                   <div className="col-span-2">
                     <label className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider block mb-1">
-                      Sector
+                      Zone
                     </label>
                     <input
                       type="text"
-                      value={newTeam.sector}
-                      onChange={(e) => setNewTeam((p) => ({ ...p, sector: e.target.value }))}
-                      placeholder="e.g. F-8 / F-9"
+                      value={newGroup.zone}
+                      onChange={(e) => setNewGroup((p) => ({ ...p, zone: e.target.value }))}
+                      placeholder="e.g. Zone A"
                       className="w-full px-3 py-2 rounded-md bg-card border border-border text-xs font-mono placeholder:text-muted-foreground/40 focus:border-tactical-green/50 focus:outline-none"
                     />
                   </div>
@@ -840,7 +852,7 @@ export default function QRFPage() {
                           key={cap}
                           onClick={() => toggleCapability(cap)}
                           className={`font-mono text-[9px] tracking-wider px-2.5 py-1.5 rounded border transition-colors uppercase ${
-                            newTeam.capabilities.includes(cap)
+                            newGroup.capabilities.includes(cap)
                               ? "bg-tactical-green/15 text-tactical-green border-tactical-green/40"
                               : "text-muted-foreground border-border hover:border-muted-foreground/40"
                           }`}
@@ -853,10 +865,10 @@ export default function QRFPage() {
                 </div>
                 <div className="flex items-center gap-2 mt-4">
                   <button
-                    onClick={handleAddTeam}
-                    disabled={!newTeam.name || !newTeam.callsign}
+                    onClick={handleAddGroup}
+                    disabled={!newGroup.name || !newGroup.callsign}
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-md font-mono text-[10px] font-bold tracking-wider transition-colors ${
-                      newTeam.name && newTeam.callsign
+                      newGroup.name && newGroup.callsign
                         ? "bg-tactical-green text-[#06080D] hover:bg-tactical-green/90"
                         : "bg-muted text-muted-foreground cursor-not-allowed"
                     }`}
@@ -865,7 +877,7 @@ export default function QRFPage() {
                     CREATE TEAM
                   </button>
                   <button
-                    onClick={() => setAddingTeam(false)}
+                    onClick={() => setAddingGroup(false)}
                     className="px-4 py-2 rounded-md font-mono text-[10px] tracking-wider text-muted-foreground hover:text-foreground border border-border hover:border-muted-foreground/40 transition-colors"
                   >
                     CANCEL
@@ -874,12 +886,12 @@ export default function QRFPage() {
               </div>
             )}
 
-            {/* Team list */}
+            {/* Group list */}
             <div className="flex-1 overflow-y-auto">
               <table className="w-full">
                 <thead className="sticky top-0 bg-card z-10">
                   <tr className="border-b border-border/60">
-                    {["ID", "Callsign", "Vehicle", "Crew", "Sector", "Capabilities", "Status", ""].map((h) => (
+                    {["ID", "Callsign", "Vehicle", "Crew", "Zone", "Capabilities", "Status", ""].map((h) => (
                       <th key={h} className="text-left px-4 py-2.5 font-mono text-[9px] tracking-[0.12em] text-muted-foreground uppercase font-normal">
                         {h}
                       </th>
@@ -887,19 +899,19 @@ export default function QRFPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {teams.map((team) => (
-                    <tr key={team.id} className="border-b border-border/20 hover:bg-accent/20 transition-colors">
-                      <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground">{team.id}</td>
+                  {groups.map((group) => (
+                    <tr key={group.id} className="border-b border-border/20 hover:bg-accent/20 transition-colors">
+                      <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground">{group.id}</td>
                       <td className="px-4 py-2.5">
-                        <span className="font-mono text-[11px] font-bold block">{team.callsign}</span>
-                        <span className="font-mono text-[9px] text-muted-foreground">{team.name}</span>
+                        <span className="font-mono text-[11px] font-bold block">{group.callsign}</span>
+                        <span className="font-mono text-[9px] text-muted-foreground">{group.name}</span>
                       </td>
-                      <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground">{team.vehicle}</td>
-                      <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground text-center">{team.personnel}</td>
-                      <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground">{team.sector}</td>
+                      <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground">{group.vehicle}</td>
+                      <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground text-center">{group.personnel}</td>
+                      <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground">{group.zone}</td>
                       <td className="px-4 py-2.5">
                         <div className="flex flex-wrap gap-1">
-                          {team.capabilities.map((cap) => (
+                          {group.capabilities.map((cap) => (
                             <span key={cap} className="font-mono text-[8px] px-1.5 py-0.5 rounded bg-accent/50 text-muted-foreground uppercase tracking-wider">
                               {cap.replace("_", " ")}
                             </span>
@@ -912,14 +924,14 @@ export default function QRFPage() {
                             <button
                               key={s}
                               onClick={() =>
-                                setTeams((prev) =>
+                                setGroups((prev) =>
                                   prev.map((t) =>
-                                    t.id === team.id ? { ...t, status: s } : t
+                                    t.id === group.id ? { ...t, status: s } : t
                                   )
                                 )
                               }
                               className={`font-mono text-[8px] tracking-wider px-1.5 py-1 rounded border transition-colors capitalize ${
-                                team.status === s
+                                group.status === s
                                   ? s === "available"
                                     ? "bg-tactical-green/15 text-tactical-green border-tactical-green/40"
                                     : s === "en_route"
@@ -936,9 +948,9 @@ export default function QRFPage() {
                       </td>
                       <td className="px-4 py-2.5">
                         <button
-                          onClick={() => handleRemoveTeam(team.id)}
+                          onClick={() => handleRemoveGroup(group.id)}
                           className="p-1 rounded hover:bg-tactical-red/10 text-muted-foreground/40 hover:text-tactical-red transition-colors"
-                          title="Remove team"
+                          title="Remove group"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -947,10 +959,10 @@ export default function QRFPage() {
                   ))}
                 </tbody>
               </table>
-              {teams.length === 0 && (
+              {groups.length === 0 && (
                 <div className="px-4 py-12 text-center">
                   <Users className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
-                  <p className="font-mono text-xs text-muted-foreground">No teams registered. Add a team to get started.</p>
+                  <p className="font-mono text-xs text-muted-foreground">No groups registered. Add a group to get started.</p>
                 </div>
               )}
             </div>
@@ -958,7 +970,7 @@ export default function QRFPage() {
             {/* Panel footer */}
             <div className="px-5 py-3 border-t border-border/60 bg-secondary/30 shrink-0">
               <p className="font-mono text-[9px] text-muted-foreground/60">
-                Teams are stored in-app. Add, remove, and manage QRF teams from this panel.
+                Groups are stored in-app. Add, remove, and manage ASF groups from this panel.
               </p>
             </div>
           </div>
