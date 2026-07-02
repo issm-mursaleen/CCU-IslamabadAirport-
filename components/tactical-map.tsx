@@ -10,7 +10,11 @@ interface GroupMarker {
   lng: number;
   status: string;
   heading: number;
+  unitType?: "vehicle" | "officer";
+  rank?: string;
+  name?: string;
   vehicle?: string;
+  personnel?: number;
   driver?: string;
   assignedTo?: string;
   destination?: string;
@@ -20,15 +24,21 @@ interface GroupMarker {
 interface IncidentMarker {
   id: string;
   type: string;
+  typeCode?: string;
+  status?: string;
   lat: number;
   lng: number;
 }
 
 interface TacticalMapProps {
   groups: GroupMarker[];
-  incident: IncidentMarker;
+  incidents: IncidentMarker[];
   selectedGroup: string | null;
+  selectedIncident?: string | null;
   onSelectGroup: (id: string) => void;
+  onSelectIncident?: (id: string) => void;
+  fitAllZones?: boolean;
+  activeZone?: string;
 }
 
 const statusColorMap: Record<string, string> = {
@@ -38,7 +48,15 @@ const statusColorMap: Record<string, string> = {
   dispatched: "#FFB700",
 };
 
-// Unique car body color per team slot (index-based)
+const incidentColorMap: Record<string, string> = {
+  red: "#FF3D3D",
+  amber: "#FFB700",
+  blue: "#26C6DA",
+  green: "#00FF9D",
+  black: "#e6edf3",
+};
+
+// Unique body color per unit slot (index-based)
 const GROUP_COLORS = [
   "#26C6DA", // teal
   "#EF5350", // red
@@ -50,17 +68,57 @@ const GROUP_COLORS = [
   "#8D6E63", // brown
 ];
 
+/* Zone polygons (approximated for Islamabad Airport) */
+const ZONE_A: [number, number][] = [
+  [33.5547045, 72.8605484],
+  [33.5560993, 72.8611492],
+  [33.5586027, 72.8469871],
+  [33.5611775, 72.8473733],
+  [33.5630729, 72.8350566],
+  [33.5602477, 72.8338979],
+  [33.5586027, 72.8332113],
+  [33.5554556, 72.8353571],
+  [33.5549191, 72.8381036],
+  [33.5580663, 72.8393053],
+];
+const ZONE_B: [number, number][] = [
+  [33.5612491, 72.8310226],
+  [33.5602120, 72.8293918],
+  [33.5612133, 72.8241132],
+  [33.5530236, 72.8220104],
+  [33.5505558, 72.8380178],
+  [33.5543111, 72.8390049],
+  [33.5550622, 72.8351854],
+  [33.5585669, 72.8326963],
+  [33.5607484, 72.8336404],
+];
+const ZONE_C: [number, number][] = [
+  [33.5557790, 72.8033028],
+  [33.5564942, 72.8003846],
+  [33.5460508, 72.7971230],
+  [33.5389685, 72.8464757],
+  [33.5436901, 72.8478489],
+  [33.5500566, 72.8493081],
+  [33.5517019, 72.8392659],
+  [33.5505558, 72.8380178],
+];
+
 export default function TacticalMap({
   groups,
-  incident,
+  incidents,
   selectedGroup,
+  selectedIncident,
   onSelectGroup,
+  onSelectIncident,
+  fitAllZones = false,
+  activeZone = "all",
 }: TacticalMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const groupMarkersRef = useRef<Map<string, L.Marker>>(new Map());
-  const incidentMarkerRef = useRef<L.Marker | null>(null);
+  const incidentMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const routeLineRef = useRef<L.Polyline | null>(null);
+  const zonesRef = useRef<Record<string, L.Polygon>>({});
   const cssLoadedRef = useRef(false);
 
   /** Top-down car icon — unique team color body, proper car silhouette with curves. */
@@ -93,8 +151,7 @@ export default function TacticalMap({
             <ellipse cx="4.5" cy="39" rx="1.2" ry="1.8" fill="#555"/>
             <ellipse cx="27.5" cy="39" rx="1.2" ry="1.8" fill="#555"/>
 
-            <!-- Car body — proper silhouette using path -->
-            <!-- Front bumper curves in, sides flare slightly, rear curves in -->
+            <!-- Car body -->
             <path d="
               M16 2
               C 22 2, 27 5, 28 9
@@ -154,6 +211,34 @@ export default function TacticalMap({
     });
   };
 
+  /** Security officer icon — circular badge with police/shield figure. */
+  const getOfficerIcon = (statusColor: string, selected: boolean) => {
+    const s = selected ? 30 : 24;
+    return L.divIcon({
+      className: "asf-officer-marker",
+      html: `
+        <div style="width:${s}px;height:${s}px;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));">
+          <svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 32 32" style="display:block;">
+            <!-- Badge circle -->
+            <circle cx="16" cy="16" r="14" fill="#0d1a2b" stroke="${statusColor}" stroke-width="2.2"/>
+            ${selected ? `<circle cx="16" cy="16" r="15.4" fill="none" stroke="white" stroke-width="1.4" opacity="0.9"/>` : ""}
+            <!-- Police cap -->
+            <path d="M9.5 11.5 C9.5 8.5, 12 6.5, 16 6.5 C20 6.5, 22.5 8.5, 22.5 11.5 L 22.5 12.2 L 9.5 12.2 Z" fill="${statusColor}"/>
+            <rect x="8.6" y="12" width="14.8" height="1.8" rx="0.9" fill="#1f2d3d" stroke="${statusColor}" stroke-width="0.5"/>
+            <circle cx="16" cy="9.6" r="1.1" fill="#0d1a2b"/>
+            <!-- Head -->
+            <circle cx="16" cy="17" r="3.4" fill="#e8c39e"/>
+            <!-- Shoulders / torso -->
+            <path d="M8.5 27.5 C8.5 23, 11.5 21, 16 21 C20.5 21, 23.5 23, 23.5 27.5 Z" fill="${statusColor}"/>
+            <path d="M14.4 21.2 L 16 24.4 L 17.6 21.2 Z" fill="#0d1a2b" opacity="0.85"/>
+          </svg>
+        </div>
+      `,
+      iconSize: [s, s],
+      iconAnchor: [s / 2, s / 2],
+    });
+  };
+
   // Inject Leaflet CSS via <link> tag (reliable across Next.js versions)
   useEffect(() => {
     if (cssLoadedRef.current) return;
@@ -175,24 +260,18 @@ export default function TacticalMap({
     if (!mapContainerRef.current || mapRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [33.5510, 72.8300],
-      zoom: 15,
+      center: [33.5505, 72.8280],
+      zoom: 14,
       zoomControl: false,
       attributionControl: false,
     });
 
-    // Colorful OpenStreetMap tile layer
-    L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      {
-        maxZoom: 19,
-      }
-    ).addTo(map);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+    }).addTo(map);
 
-    // Add zoom control to top-right
     L.control.zoom({ position: "topright" }).addTo(map);
 
-    // Attribution
     L.control
       .attribution({ position: "bottomright", prefix: false })
       .addAttribution(
@@ -200,23 +279,97 @@ export default function TacticalMap({
       )
       .addTo(map);
 
+    // Zone polygons — A: road outside airport, B: terminal, C: runway/apron
+    const zoneA = L.polygon(ZONE_A, { color: '#22c55e', weight: 2, fillColor: '#22c55e', fillOpacity: 0.08, interactive: false }).addTo(map);
+    zoneA.bindTooltip('ZONE A — APPROACH ROAD', { permanent: true, direction: 'center', className: 'zone-label' });
+    zonesRef.current["Zone A"] = zoneA;
+
+    const zoneB = L.polygon(ZONE_B, { color: '#f59e0b', weight: 2, fillColor: '#f59e0b', fillOpacity: 0.08, interactive: false }).addTo(map);
+    zoneB.bindTooltip('ZONE B — TERMINAL', { permanent: true, direction: 'center', className: 'zone-label' });
+    zonesRef.current["Zone B"] = zoneB;
+
+    const zoneC = L.polygon(ZONE_C, { color: '#ef4444', weight: 2, fillColor: '#ef4444', fillOpacity: 0.08, interactive: false }).addTo(map);
+    zoneC.bindTooltip('ZONE C — RUNWAY / APRON', { permanent: true, direction: 'center', className: 'zone-label' });
+    zonesRef.current["Zone C"] = zoneC;
+
+    if (fitAllZones) {
+      const bounds = L.latLngBounds([...ZONE_A, ...ZONE_B, ...ZONE_C]);
+      map.fitBounds(bounds, { padding: [10, 10] });
+    }
+
     mapRef.current = map;
 
     // Force a resize check after mount — fixes the grey/black blank map issue
-    setTimeout(() => {
-      map.invalidateSize();
+    const resizeTimer = setTimeout(() => {
+      if (mapRef.current) {
+        map.invalidateSize();
+        if (fitAllZones) {
+          map.fitBounds(L.latLngBounds([...ZONE_A, ...ZONE_B, ...ZONE_C]), { padding: [10, 10] });
+        }
+      }
     }, 200);
 
     return () => {
+      clearTimeout(resizeTimer);
       map.remove();
       mapRef.current = null;
       groupMarkersRef.current.clear();
-      incidentMarkerRef.current = null;
+      incidentMarkersRef.current.clear();
       routeLineRef.current = null;
+      zonesRef.current = {};
     };
-  }, []);
+  }, [fitAllZones]);
 
-  // Update team markers
+  // Update zone highlights and map view focus zoom
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const zA = zonesRef.current["Zone A"];
+    const zB = zonesRef.current["Zone B"];
+    const zC = zonesRef.current["Zone C"];
+
+    if (!zA || !zB || !zC) return;
+
+    // Default styling configs
+    const highlightConfig = {
+      "Zone A": { color: '#22c55e', weight: 3.5, fillColor: '#22c55e', fillOpacity: 0.15 },
+      "Zone B": { color: '#f59e0b', weight: 3.5, fillColor: '#f59e0b', fillOpacity: 0.15 },
+      "Zone C": { color: '#ef4444', weight: 3.5, fillColor: '#ef4444', fillOpacity: 0.15 },
+    };
+
+    const greyConfig = { color: '#4b5563', weight: 1, fillColor: '#4b5563', fillOpacity: 0.01 };
+
+    if (!activeZone || activeZone === "all") {
+      // Restore all zones to their original color & weight
+      zA.setStyle({ color: '#22c55e', weight: 2, fillColor: '#22c55e', fillOpacity: 0.08 });
+      zB.setStyle({ color: '#f59e0b', weight: 2, fillColor: '#f59e0b', fillOpacity: 0.08 });
+      zC.setStyle({ color: '#ef4444', weight: 2, fillColor: '#ef4444', fillOpacity: 0.08 });
+
+      // fit bounds with padding
+      const bounds = L.latLngBounds([...ZONE_A, ...ZONE_B, ...ZONE_C]);
+      map.flyToBounds(bounds, { padding: [10, 10], duration: 1.2 });
+    } else {
+      // Highlight only activeZone, grey out other two
+      const zonesList = ["Zone A", "Zone B", "Zone C"] as const;
+      zonesList.forEach((z) => {
+        const poly = zonesRef.current[z];
+        if (!poly) return;
+        if (z === activeZone) {
+          poly.setStyle(highlightConfig[z]);
+        } else {
+          poly.setStyle(greyConfig);
+        }
+      });
+
+      // Fly map bounds to focus on the active highlighted zone!
+      const activeCoords = activeZone === "Zone A" ? ZONE_A : activeZone === "Zone B" ? ZONE_B : ZONE_C;
+      const bounds = L.latLngBounds(activeCoords);
+      map.flyToBounds(bounds, { padding: [40, 40], duration: 1.2 });
+    }
+  }, [activeZone]);
+
+  // Update unit markers
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -234,7 +387,11 @@ export default function TacticalMap({
       const statusColor = statusColorMap[group.status] || "#00FF9D";
       const existing = groupMarkersRef.current.get(group.id);
       const selected = selectedGroup === group.id;
-      const vehicleIcon = getVehicleIcon(groupColor, statusColor, group.heading, selected);
+      const isOfficer = group.unitType === "officer";
+      const icon = isOfficer
+        ? getOfficerIcon(statusColor, selected)
+        : getVehicleIcon(groupColor, statusColor, group.heading, selected);
+      const labelColor = isOfficer ? statusColor : groupColor;
 
       const isLight = document.documentElement.classList.contains("light");
       const bg      = isLight ? "#ffffff"              : "#0d1117";
@@ -247,6 +404,21 @@ export default function TacticalMap({
       const popupHtml = (t: GroupMarker, color: string) => {
         const border   = isLight ? `${color}66` : `${color}55`;
         const headerBg = isLight ? `${color}12` : `${color}18`;
+        const rows: [string, string, string][] = isOfficer
+          ? [
+              ["Officer", t.name ?? "—", value],
+              ["Rank", t.rank ?? "—", value],
+              ["Post", t.assignedTo ?? "—", value],
+              ["Sector", t.destination ?? "—", color],
+              ["Status", (t.status || "").replace("_", " ").toUpperCase(), etaClr],
+            ]
+          : [
+              ["Vehicle", t.vehicle ?? "—", value],
+              ["Driver", t.driver ?? "—", value],
+              ["Crew", t.personnel != null ? `${t.personnel} personnel` : "—", value],
+              ["Destination", t.destination ?? "—", color],
+              ["ETA", t.eta ?? "—", etaClr],
+            ];
         return `
         <div style="font-family:monospace;min-width:220px;background:${bg};border:1px solid ${border};border-radius:8px;overflow:hidden;box-shadow:${shadow};">
           <div style="background:${headerBg};border-bottom:1px solid ${border};padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">
@@ -254,47 +426,40 @@ export default function TacticalMap({
             <span style="font-size:9px;color:${label};letter-spacing:0.08em;">${t.id}</span>
           </div>
           <div style="padding:10px 12px;display:grid;gap:7px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid ${divider};padding-bottom:6px;">
-              <span style="font-size:9px;color:${label};letter-spacing:0.1em;text-transform:uppercase;">Vehicle</span>
-              <span style="font-size:10px;color:${value};font-weight:bold;">${t.vehicle ?? "—"}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid ${divider};padding-bottom:6px;">
-              <span style="font-size:9px;color:${label};letter-spacing:0.1em;text-transform:uppercase;">Driver</span>
-              <span style="font-size:10px;color:${value};font-weight:bold;">${t.driver ?? "—"}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid ${divider};padding-bottom:6px;">
-              <span style="font-size:9px;color:${label};letter-spacing:0.1em;text-transform:uppercase;">Assigned To</span>
-              <span style="font-size:10px;color:${value};font-weight:bold;">${t.assignedTo ?? "—"}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid ${divider};padding-bottom:6px;">
-              <span style="font-size:9px;color:${label};letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;margin-right:8px;">Destination</span>
-              <span style="font-size:10px;color:${color};font-weight:bold;text-align:right;">${t.destination ?? "—"}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:9px;color:${label};letter-spacing:0.1em;text-transform:uppercase;">ETA</span>
-              <span style="font-size:10px;color:${etaClr};font-weight:bold;">${t.eta ?? "—"}</span>
-            </div>
+            ${rows
+              .map(
+                ([k, v, c], i) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;${i < rows.length - 1 ? `border-bottom:1px solid ${divider};padding-bottom:6px;` : ""}">
+              <span style="font-size:9px;color:${label};letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;margin-right:8px;">${k}</span>
+              <span style="font-size:10px;color:${c};font-weight:bold;text-align:right;">${v}</span>
+            </div>`
+              )
+              .join("")}
           </div>
         </div>`;
       };
 
+      const tooltipHtml = `<div style="font-family:monospace;font-size:10px;letter-spacing:0.1em;color:${labelColor};font-weight:bold;background:#0d1117ee;border:1px solid ${labelColor}44;padding:3px 8px;border-radius:4px;">${group.callsign}</div>`;
+
       if (existing) {
         existing.setLatLng([group.lat, group.lng]);
-        existing.setIcon(vehicleIcon);
+        existing.setIcon(icon);
         existing.setZIndexOffset(selected ? 400 : 200);
-        // Refresh popup content in case team data changed
-        if (existing.getPopup()) existing.setPopupContent(popupHtml(group, groupColor));
+        if (existing.getPopup()) existing.setPopupContent(popupHtml(group, labelColor));
+        existing.setTooltipContent(tooltipHtml);
       } else {
-        const marker = L.marker([group.lat, group.lng], { icon: vehicleIcon })
+        const marker = L.marker([group.lat, group.lng], { icon })
           .addTo(map)
           .on("click", () => onSelectGroup(group.id));
 
-        marker.bindTooltip(
-          `<div style="font-family:monospace;font-size:10px;letter-spacing:0.1em;color:${groupColor};font-weight:bold;background:#0d1117ee;border:1px solid ${groupColor}44;padding:3px 8px;border-radius:4px;">${group.callsign}</div>`,
-          { permanent: true, direction: "bottom", offset: [0, 8], className: "tactical-tooltip" }
-        );
+        marker.bindTooltip(tooltipHtml, {
+          permanent: true,
+          direction: "bottom",
+          offset: [0, 8],
+          className: "tactical-tooltip",
+        });
 
-        marker.bindPopup(popupHtml(group, groupColor), {
+        marker.bindPopup(popupHtml(group, labelColor), {
           className: "tactical-popup",
           maxWidth: 260,
           offset: [0, -8],
@@ -308,58 +473,75 @@ export default function TacticalMap({
         marker.setZIndexOffset(selected ? 400 : 200);
         groupMarkersRef.current.set(group.id, marker);
       }
-
-      // Update tooltip callsign label color
-      const m = groupMarkersRef.current.get(group.id);
-      if (m) {
-        m.setTooltipContent(
-          `<div style="font-family:monospace;font-size:10px;letter-spacing:0.1em;color:${groupColor};font-weight:bold;background:#0d1117ee;border:1px solid ${groupColor}44;padding:3px 8px;border-radius:4px;">${group.callsign}</div>`
-        );
-      }
     });
   }, [groups, selectedGroup, onSelectGroup]);
 
-  // Update incident marker
+  // Update incident/event markers (all events plotted, colored by type code)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    if (incidentMarkerRef.current) {
-      incidentMarkerRef.current.setLatLng([incident.lat, incident.lng]);
-    } else {
-      const pulseIcon = L.divIcon({
+    const activeIds = new Set(incidents.map((i) => i.id));
+    for (const [id, marker] of incidentMarkersRef.current.entries()) {
+      if (!activeIds.has(id)) {
+        marker.remove();
+        incidentMarkersRef.current.delete(id);
+      }
+    }
+
+    incidents.forEach((incident) => {
+      const resolved = incident.status === "resolved";
+      const color = resolved ? "#00FF9D" : incidentColorMap[incident.typeCode || "red"] || "#FF3D3D";
+      const selected = selectedIncident === incident.id;
+      const pulse = !resolved && incident.status === "pending";
+      const size = selected ? 32 : 26;
+
+      const icon = L.divIcon({
         className: "incident-marker",
         html: `
-          <div style="position:relative;width:28px;height:28px;">
-            <div style="position:absolute;inset:0;background:rgba(255,61,61,0.15);border:2px solid #FF3D3D;border-radius:4px;transform:rotate(45deg);display:flex;align-items:center;justify-content:center;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF3D3D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(-45deg)"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          <div style="position:relative;width:${size}px;height:${size}px;">
+            <div style="position:absolute;inset:0;background:${color}26;border:2px solid ${color};border-radius:4px;transform:rotate(45deg);display:flex;align-items:center;justify-content:center;${selected ? `box-shadow:0 0 12px ${color}AA;` : ""}">
+              ${
+                resolved
+                  ? `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(-45deg)"><path d="M20 6 9 17l-5-5"/></svg>`
+                  : `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(-45deg)"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`
+              }
             </div>
-            <div style="position:absolute;inset:-4px;border:2px solid #FF3D3D;border-radius:6px;transform:rotate(45deg);animation:incidentPing 2s ease-out infinite;opacity:0.4;"></div>
+            ${pulse ? `<div style="position:absolute;inset:-4px;border:2px solid ${color};border-radius:6px;transform:rotate(45deg);animation:incidentPing 2s ease-out infinite;opacity:0.4;"></div>` : ""}
           </div>
         `,
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
       });
 
-      incidentMarkerRef.current = L.marker([incident.lat, incident.lng], {
-        icon: pulseIcon,
-      }).addTo(map);
-
-      incidentMarkerRef.current.bindTooltip(
-        `<div style="font-family:monospace;font-size:10px;background:#0d1117ee;border:1px solid #FF3D3D55;padding:4px 10px;border-radius:4px;">
-          <span style="color:#FF3D3D;font-weight:bold;">${incident.id}</span>
+      const tooltipHtml = `<div style="font-family:monospace;font-size:10px;background:#0d1117ee;border:1px solid ${color}55;padding:4px 10px;border-radius:4px;">
+          <span style="color:${color};font-weight:bold;">${incident.id}</span>
           <span style="color:#888;margin-left:6px;">${incident.type}</span>
-        </div>`,
-        {
+        </div>`;
+
+      const existing = incidentMarkersRef.current.get(incident.id);
+      if (existing) {
+        existing.setLatLng([incident.lat, incident.lng]);
+        existing.setIcon(icon);
+        existing.setZIndexOffset(selected ? 500 : 300);
+        existing.setTooltipContent(tooltipHtml);
+      } else {
+        const marker = L.marker([incident.lat, incident.lng], { icon, zIndexOffset: 300 })
+          .addTo(map)
+          .on("click", () => {
+            if (onSelectIncident) onSelectIncident(incident.id);
+          });
+        marker.bindTooltip(tooltipHtml, {
           direction: "top",
           offset: [0, -12],
           className: "tactical-tooltip",
-        }
-      );
-    }
-  }, [incident]);
+        });
+        incidentMarkersRef.current.set(incident.id, marker);
+      }
+    });
+  }, [incidents, selectedIncident, onSelectIncident]);
 
-  // Draw route line from selected team to incident
+  // Draw route line from selected unit to selected incident
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -369,9 +551,10 @@ export default function TacticalMap({
       routeLineRef.current = null;
     }
 
-    if (selectedGroup) {
+    if (selectedGroup && selectedIncident) {
       const group = groups.find((t) => t.id === selectedGroup);
-      if (group) {
+      const incident = incidents.find((i) => i.id === selectedIncident);
+      if (group && incident) {
         routeLineRef.current = L.polyline(
           [
             [group.lat, group.lng],
@@ -386,7 +569,7 @@ export default function TacticalMap({
         ).addTo(map);
       }
     }
-  }, [selectedGroup, groups, incident]);
+  }, [selectedGroup, selectedIncident, groups, incidents]);
 
   return (
     <div className="relative w-full h-full">
@@ -413,7 +596,7 @@ export default function TacticalMap({
           background: #161b22 !important;
           color: #00FF9D !important;
         }
-        .qrf-vehicle-marker {
+        .qrf-vehicle-marker, .asf-officer-marker {
           background: transparent !important;
           border: none !important;
         }
@@ -423,6 +606,20 @@ export default function TacticalMap({
         .incident-marker {
           background: transparent !important;
           border: none !important;
+        }
+        .zone-label {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          color: rgba(255, 255, 255, 0.45) !important;
+          font-family: monospace !important;
+          font-weight: bold;
+          font-size: 12px;
+          letter-spacing: 0.08em;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+        .zone-label::before {
+          display: none !important;
         }
         @keyframes incidentPing {
           0% { transform: rotate(45deg) scale(1); opacity: 0.5; }

@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import { useASF, type Zone, type Incident } from "@/components/asf-context";
 import {
   Crosshair,
   ShieldCheck,
@@ -23,7 +25,49 @@ import {
   Wifi,
   Zap,
   Lock,
+  MapPin,
+  Signal,
+  Car,
+  User,
+  Cctv,
+  Send,
+  ChevronRight,
 } from "lucide-react";
+
+/* ── Dynamic import for Leaflet map (needs window) ── */
+const TacticalMap = dynamic(() => import("@/components/tactical-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-card">
+      <div className="flex items-center gap-2">
+        <Signal className="h-4 w-4 text-tactical-green blink" />
+        <span className="font-mono text-xs text-muted-foreground tracking-wider">
+          LOADING COMMAND MAP...
+        </span>
+      </div>
+    </div>
+  ),
+});
+
+const zoneMeta: Record<Zone, { color: string; dot: string; label: string }> = {
+  "Zone A": { color: "text-[#22c55e]", dot: "bg-[#22c55e]", label: "APPROACH ROAD" },
+  "Zone B": { color: "text-[#f59e0b]", dot: "bg-[#f59e0b]", label: "TERMINAL" },
+  "Zone C": { color: "text-[#ef4444]", dot: "bg-[#ef4444]", label: "RUNWAY / APRON" },
+};
+
+const zoneAlertStatusConfig: Record<string, { color: string; bg: string; border: string; label: string; icon: typeof Clock }> = {
+  pending: { color: "text-tactical-amber", bg: "bg-tactical-amber/10", border: "border-tactical-amber/30", label: "PENDING", icon: Clock },
+  dispatched: { color: "text-tactical-cyan", bg: "bg-tactical-cyan/10", border: "border-tactical-cyan/30", label: "RESPONDING", icon: Send },
+  on_scene: { color: "text-tactical-red", bg: "bg-tactical-red/10", border: "border-tactical-red/30", label: "ON SCENE", icon: Radio },
+  resolved: { color: "text-tactical-green", bg: "bg-tactical-green/10", border: "border-tactical-green/30", label: "RESOLVED", icon: CheckCircle2 },
+};
+
+const unitStatusDot: Record<string, string> = {
+  available: "bg-tactical-green",
+  en_route: "bg-tactical-amber",
+  on_scene: "bg-tactical-red",
+  dispatched: "bg-tactical-amber",
+};
 
 type EventLevel = "critical" | "high" | "medium" | "low";
 
@@ -218,7 +262,6 @@ function CameraModal({ cam, onClose }: { cam: typeof cameras[0]; onClose: () => 
             <span className="font-mono text-[10px] text-muted-foreground">{cam.id}</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="font-mono text-[10px] text-tactical-green tracking-widest">● ONLINE</span>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
@@ -237,6 +280,193 @@ function CameraModal({ cam, onClose }: { cam: typeof cameras[0]; onClose: () => 
             className="w-full h-full object-contain"
           />
           <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 3px)" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClose: () => void }) {
+  const sc = zoneAlertStatusConfig[incident.status];
+  const StatusIcon = sc.icon;
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal Content */}
+      <div className="relative z-10 w-full max-w-2xl bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-secondary/20">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs bg-tactical-red/10 border border-tactical-red/35 px-2 py-0.5 rounded text-tactical-red font-bold">
+              {incident.id}
+            </span>
+            <h2 className="font-mono font-bold text-foreground text-sm tracking-tight uppercase">
+              {incident.type} — Zone Alert
+            </h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 p-6 space-y-5 font-mono text-xs">
+          {/* Status and Zone */}
+          <div className="flex flex-wrap gap-2.5">
+            <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md border ${sc.bg} ${sc.color} ${sc.border} uppercase tracking-wider`}>
+              <StatusIcon className="h-3 w-3" />
+              {sc.label}
+            </span>
+            <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md border bg-secondary/40 border-border uppercase tracking-wider ${zoneMeta[incident.zone].color}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${zoneMeta[incident.zone].dot}`} />
+              {incident.zone}
+            </span>
+          </div>
+
+          {/* Details Table */}
+          <div className="space-y-0 rounded-xl border border-border/40 overflow-hidden bg-secondary/20">
+            {[
+              { label: "Site Location", value: incident.site },
+              { label: "Reporting Cam", value: incident.camera },
+              { label: "Report Time", value: incident.reported },
+              { label: "Required Capability", value: incident.requiredCap.toUpperCase() },
+            ].map(({ label, value }, i, arr) => (
+              <div key={label} className={`flex items-center justify-between px-5 py-3 ${i !== arr.length - 1 ? "border-b border-border/20" : ""}`}>
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wider">{label}</span>
+                <span className="font-semibold text-foreground text-right">{value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Matches Payload Details */}
+          {incident.detail && (
+            <div className="rounded-xl border border-border/40 bg-secondary/20 p-4 space-y-3.5">
+              <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">MATCH RETRIEVAL SUMMARY</span>
+              <div className="grid grid-cols-2 gap-4">
+                {incident.detail.plate && (
+                  <div className="bg-card border border-border/40 p-2.5 rounded">
+                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">LICENSE PLATE</span>
+                    <span className="font-bold text-tactical-red text-sm tracking-widest">{incident.detail.plate}</span>
+                  </div>
+                )}
+                {incident.detail.vehicleDesc && (
+                  <div className="bg-card border border-border/40 p-2.5 rounded">
+                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">VEHICLE</span>
+                    <span className="font-bold text-foreground">{incident.detail.vehicleDesc}</span>
+                  </div>
+                )}
+                {incident.detail.personName && (
+                  <div className="bg-card border border-border/40 p-2.5 rounded">
+                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">SUSPECT NAME</span>
+                    <span className="font-bold text-foreground">{incident.detail.personName}</span>
+                  </div>
+                )}
+                {incident.detail.personId && (
+                  <div className="bg-card border border-border/40 p-2.5 rounded">
+                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">SUSPECT ID</span>
+                    <span className="font-bold text-tactical-amber">{incident.detail.personId}</span>
+                  </div>
+                )}
+                {incident.detail.passport && (
+                  <div className="bg-card border border-border/40 p-2.5 rounded">
+                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">PASSPORT</span>
+                    <span className="font-bold text-foreground">{incident.detail.passport} ({incident.detail.nationality})</span>
+                  </div>
+                )}
+                {incident.detail.flight && (
+                  <div className="bg-card border border-border/40 p-2.5 rounded">
+                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FLIGHT</span>
+                    <span className="font-bold text-tactical-cyan">{incident.detail.flight}</span>
+                  </div>
+                )}
+                {incident.detail.flagReason && (
+                  <div className="bg-card border border-border/40 p-2.5 rounded col-span-2">
+                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FLAG REASON</span>
+                    <span className="text-foreground/90">{incident.detail.flagReason}</span>
+                  </div>
+                )}
+                {incident.detail.firNo && (
+                  <div className="bg-card border border-border/40 p-2.5 rounded">
+                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FIR NO</span>
+                    <span className="font-bold text-foreground">{incident.detail.firNo}</span>
+                  </div>
+                )}
+                {incident.detail.complainant && (
+                  <div className="bg-card border border-border/40 p-2.5 rounded col-span-2">
+                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">COMPLAINANT INFO</span>
+                    <span className="text-foreground">{incident.detail.complainant} (Contact: {incident.detail.contact})</span>
+                  </div>
+                )}
+                {incident.detail.peopleCount && (
+                  <div className="bg-card border border-border/40 p-2.5 rounded">
+                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">PEOPLE COUNT</span>
+                    <span className="font-bold text-tactical-amber text-sm">{incident.detail.peopleCount} / Limit {incident.detail.threshold}</span>
+                  </div>
+                )}
+                {incident.detail.waitTime && (
+                  <div className="bg-card border border-border/40 p-2.5 rounded">
+                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">WAIT TIME</span>
+                    <span className="font-bold text-foreground">{incident.detail.waitTime}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Description */}
+          <div className="rounded-xl border border-border/40 bg-secondary/40 p-4 space-y-1.5">
+            <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">INCIDENT OVERVIEW</span>
+            <p className="text-foreground/90 leading-relaxed">{incident.description}</p>
+          </div>
+
+          {/* Live Video Stream */}
+          {incident.videoSrc && (
+            <div className="space-y-2">
+              <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">RETRIEVED VIDEO CAPTURE</span>
+              <div className="rounded-xl overflow-hidden border border-border/40 relative bg-zinc-900" style={{ aspectRatio: "16/9" }}>
+                <video
+                  src={incident.videoSrc}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[8px] font-bold tracking-widest z-10">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  FEED RECORD
+                </div>
+                <div className="absolute bottom-3 left-3 bg-black/60 border border-white/10 px-2 py-1 rounded backdrop-blur z-10 text-[9px]">
+                  {incident.camera}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="p-4 border-t border-border/40 bg-secondary/20 flex gap-3">
+          <Link
+            href="/dashboard/asf"
+            className="flex-1 bg-tactical-cyan hover:bg-tactical-cyan/90 text-black font-mono text-[11px] font-bold py-2.5 rounded transition-colors tracking-wider uppercase text-center"
+          >
+            DISPATCH RESPONDING PATROL
+          </Link>
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 bg-secondary hover:bg-secondary/70 border border-border/60 text-foreground font-mono text-[11px] font-bold rounded transition-colors uppercase cursor-pointer"
+          >
+            Close Details
+          </button>
         </div>
       </div>
     </div>
@@ -336,7 +566,6 @@ function EventDetailModal({ event, onClose }: { event: SecurityEvent; onClose: (
             <div className="absolute top-3 right-3 font-mono text-[9px] text-white/80 tracking-widest bg-black/40 px-1.5 py-0.5 rounded">{event.camera}</div>
             <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-between">
               <span className="font-mono text-[10px] text-white/90">{event.location}</span>
-              <span className="font-mono text-[9px] text-tactical-green tracking-widest">● ONLINE</span>
             </div>
           </div>
         </div>
@@ -346,11 +575,29 @@ function EventDetailModal({ event, onClose }: { event: SecurityEvent; onClose: (
 }
 
 export default function DashboardPage() {
+  const { groups, incidents } = useASF();
   const [mounted, setMounted] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<SecurityEvent | null>(null);
   const [selectedCamera, setSelectedCamera] = useState<typeof cameras[0] | null>(null);
+  const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
+  const [selectedIncidentDetail, setSelectedIncidentDetail] = useState<Incident | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   useEffect(() => setMounted(true), []);
+
+  const activeZoneAlerts = incidents.filter((i) => i.status !== "resolved");
+  const officers = groups.filter((g) => g.unitType === "officer");
+  const vehicles = groups.filter((g) => g.unitType === "vehicle");
+  const totalPersonnel = groups.reduce((sum, g) => sum + g.personnel, 0);
+
+  const byZone = useMemo(() => {
+    const zones: Zone[] = ["Zone A", "Zone B", "Zone C"];
+    return zones.map((zone) => ({
+      zone,
+      units: groups.filter((g) => g.zone === zone),
+      alerts: incidents.filter((i) => i.zone === zone && i.status !== "resolved").length,
+    }));
+  }, [groups, incidents]);
 
   return (
     <>
@@ -361,20 +608,14 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold tracking-tight font-mono text-foreground">Command Centre Overview</h1>
             <p className="text-sm text-muted-foreground font-mono mt-0.5">Real-time airport operational status across all security systems</p>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-tactical-green/10 border border-tactical-green/20">
-            <Activity className="h-3.5 w-3.5 text-tactical-green" />
-            <span className="font-mono text-[11px] text-tactical-green tracking-wide">ALL SYSTEMS NOMINAL</span>
-          </div>
         </div>
 
         {/* Stats bar */}
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {[
             { label: "Active Alerts", value: "10", icon: AlertTriangle, color: "text-tactical-red", bg: "bg-tactical-red/10", border: "border-tactical-red/20" },
-            { label: "Active Incidents", value: "3", icon: Zap, color: "text-tactical-amber", bg: "bg-tactical-amber/10", border: "border-tactical-amber/20" },
-            { label: "Guards On-Duty", value: "16", icon: Users, color: "text-tactical-cyan", bg: "bg-tactical-cyan/10", border: "border-tactical-cyan/20" },
-            { label: "System Status", value: "OPERATIONAL", icon: Activity, color: "text-tactical-green", bg: "bg-tactical-green/10", border: "border-tactical-green/20" },
-            { label: "Threat Level", value: "BRAVO", icon: Shield, color: "text-[#A78BFA]", bg: "bg-[#A78BFA]/10", border: "border-[#A78BFA]/20" },
+            { label: "Zone Incidents", value: String(activeZoneAlerts.length), icon: Zap, color: "text-tactical-amber", bg: "bg-tactical-amber/10", border: "border-tactical-amber/20" },
+            { label: "ASF Deployed", value: `${totalPersonnel}`, icon: Users, color: "text-tactical-cyan", bg: "bg-tactical-cyan/10", border: "border-tactical-cyan/20" },
           ].map((stat, i) => (
             <div key={stat.label} className={`glow-border rounded-xl p-4 bg-card noise-texture border border-border/50 flex items-center gap-3 ${mounted ? "fade-in-up" : "opacity-0"}`} style={{ animationDelay: `${i * 70}ms` }}>
               <div className={`h-9 w-9 rounded-lg ${stat.bg} border ${stat.border} flex items-center justify-center shrink-0`}>
@@ -388,179 +629,246 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Main 2-col layout */}
-        <div className="grid grid-cols-[1fr_520px] gap-4">
-          {/* LEFT: Live Event Alert Feed */}
-          <div className={`rounded-xl bg-card border border-border/40 overflow-hidden ${mounted ? "fade-in-up" : "opacity-0"}`} style={{ animationDelay: "400ms" }}>
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/40">
+        {/* ── COMMAND & CONTROL: zone map + alerts + deployed forces ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px] gap-4">
+          {/* Command map */}
+          <div
+            className={`glow-border rounded-xl bg-card noise-texture relative overflow-hidden border border-border/40 ${
+              mounted ? "fade-in-up" : "opacity-0"
+            }`}
+            style={{ animationDelay: "300ms" }}
+          >
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/40">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-tactical-red animate-pulse" />
-                <span className="font-mono font-bold text-sm text-foreground">Live Event Alert Feed</span>
+                <MapPin className="h-3.5 w-3.5 text-tactical-cyan" />
+                <span className="font-mono font-bold text-sm text-foreground">Command &amp; Control — Zone Map</span>
               </div>
-              <span className="font-mono text-[10px] text-muted-foreground">{events.length} events</span>
+              <div className="flex items-center gap-3">
+                {(Object.keys(zoneMeta) as Zone[]).map((z) => (
+                  <span key={z} className={`flex items-center gap-1 font-mono text-[9px] ${zoneMeta[z].color}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${zoneMeta[z].dot}`} />
+                    {z}
+                  </span>
+                ))}
+              </div>
             </div>
 
-            <div className="divide-y divide-border/30">
-              {events.map((evt) => {
-                const cfg = levelConfig[evt.level];
-                const Ic = evt.icon;
-                return (
-                  <button
-                    key={evt.id}
-                    onClick={() => setSelectedEvent(evt)}
-                    className="w-full text-left px-5 py-3.5 hover:bg-accent/20 transition-colors group"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`mt-0.5 p-1.5 rounded-md ${cfg.bg} shrink-0`}>
-                        <Ic className={`h-3.5 w-3.5 ${cfg.text}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-0.5">
-                          <span className="font-mono font-semibold text-sm text-foreground group-hover:text-tactical-cyan transition-colors truncate">{evt.title}</span>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className={`font-mono text-[9px] font-bold px-2 py-0.5 rounded tracking-wider ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
-                              {evt.level.toUpperCase()}
-                            </span>
-                            <span className="font-mono text-[10px] text-muted-foreground tabular-nums">{evt.time}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono mb-2">
-                          <span>{evt.location}</span>
-                          <span className="text-border">•</span>
-                          <span>{evt.camera}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1 rounded-full bg-muted/30 overflow-hidden">
-                            <div className={`h-full rounded-full ${cfg.bar} transition-all`} style={{ width: `${evt.confidence}%` }} />
-                          </div>
-                          <span className={`font-mono text-[10px] font-semibold ${cfg.text} w-8 text-right tabular-nums`}>{evt.confidence}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="relative w-full" style={{ height: "560px" }}>
+              <TacticalMap
+                groups={groups.map((t) => ({
+                  id: t.id,
+                  callsign: t.callsign,
+                  lat: t.lat,
+                  lng: t.lng,
+                  status: t.status,
+                  heading: t.heading,
+                  unitType: t.unitType,
+                  rank: t.rank,
+                  name: t.name,
+                  vehicle: t.vehicle,
+                  personnel: t.personnel,
+                  driver: t.driver,
+                  assignedTo: t.assignedTo,
+                  destination: t.destination,
+                  eta: t.eta,
+                }))}
+                incidents={incidents.map((i) => ({
+                  id: i.id,
+                  type: i.type,
+                  typeCode: i.typeCode,
+                  status: i.status,
+                  lat: i.lat,
+                  lng: i.lng,
+                }))}
+                selectedGroup={selectedGroup}
+                selectedIncident={selectedIncident}
+                onSelectGroup={setSelectedGroup}
+                onSelectIncident={setSelectedIncident}
+                fitAllZones
+              />
+            </div>
+
+            <div className="flex items-center gap-4 px-4 py-2 border-t border-border/40 flex-wrap">
+              {[
+                { color: "bg-tactical-green", label: "Available" },
+                { color: "bg-tactical-amber", label: "En Route" },
+                { color: "bg-tactical-red", label: "On Scene" },
+              ].map((l) => (
+                <div key={l.label} className="flex items-center gap-1.5">
+                  <div className={`w-2 h-2 rounded-full ${l.color}`} />
+                  <span className="font-mono text-[9px] text-muted-foreground">{l.label}</span>
+                </div>
+              ))}
+              <div className="flex items-center gap-1.5">
+                <Car className="h-3 w-3 text-muted-foreground" />
+                <span className="font-mono text-[9px] text-muted-foreground">Vehicle ({vehicles.length})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <User className="h-3 w-3 text-muted-foreground" />
+                <span className="font-mono text-[9px] text-muted-foreground">Officer ({officers.length})</span>
+              </div>
+              <div className="flex items-center gap-1.5 ml-auto">
+                <div className="w-2 h-2 rounded-sm rotate-45 border border-tactical-red bg-tactical-red/20" />
+                <span className="font-mono text-[9px] text-muted-foreground">Alert</span>
+              </div>
             </div>
           </div>
 
-          {/* RIGHT: Cameras + Critical Events */}
+          {/* Zone alerts + deployed forces */}
           <div className="flex flex-col gap-4">
-            {/* Priority Feeds */}
-            <div className={`rounded-xl bg-card border border-border/40 overflow-hidden ${mounted ? "fade-in-up" : "opacity-0"}`} style={{ animationDelay: "450ms" }}>
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
-                <div className="flex items-center gap-2">
-                  <Video className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="font-mono font-bold text-sm text-foreground">Priority Feeds</span>
-                </div>
-                <span className="font-mono text-[10px] text-tactical-green">● {cameras.length} online</span>
+            {/* Zone alerts */}
+            <div
+              className={`glow-border rounded-xl bg-card noise-texture overflow-hidden border border-border/40 ${
+                mounted ? "fade-in-up" : "opacity-0"
+              }`}
+              style={{ animationDelay: "350ms" }}
+            >
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40">
+                <AlertTriangle className="h-3.5 w-3.5 text-tactical-red" />
+                <span className="font-mono font-bold text-sm text-foreground">Zone Alerts</span>
+                <Link
+                  href="/dashboard/asf"
+                  className="ml-auto flex items-center gap-1 font-mono text-[9px] text-tactical-cyan hover:underline"
+                >
+                  OPEN ASF OPS <ChevronRight className="h-3 w-3" />
+                </Link>
               </div>
-              <div className="grid grid-cols-2 gap-0.5 p-0.5">
-                {cameras.map((cam) => (
-                  <div
-                    key={cam.id}
-                    className="relative bg-zinc-900 overflow-hidden cursor-pointer group"
-                    style={{ aspectRatio: "16/9" }}
-                    onClick={() => setSelectedCamera(cam)}
-                  >
-                    <video
-                      src={cam.video}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                    />
-                    <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 3px)" }} />
-                    {/* Expand hint on hover */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="bg-muted/50 rounded-full p-2">
-                        <Video className="h-5 w-5 text-foreground" />
+              <div className="divide-y divide-border/30 max-h-[240px] overflow-y-auto">
+                {incidents.map((inc) => {
+                  const sc = zoneAlertStatusConfig[inc.status];
+                  const StatusIcon = sc.icon;
+                  const isSelected = selectedIncident === inc.id;
+                  return (
+                    <div
+                      key={inc.id}
+                      className={`px-3 py-2.5 cursor-pointer transition-all ${
+                        isSelected
+                          ? "bg-tactical-green/5 border-l-2 border-l-tactical-green"
+                          : "hover:bg-accent/20 border-l-2 border-l-transparent"
+                      }`}
+                      onClick={() => {
+                        setSelectedIncident(inc.id);
+                        setSelectedIncidentDetail(inc);
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[10px] font-bold">{inc.id}</span>
+                          <span className={`flex items-center gap-1 font-mono text-[9px] ${zoneMeta[inc.zone].color}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${zoneMeta[inc.zone].dot}`} />
+                            {inc.zone}
+                          </span>
+                        </div>
+                        <span className={`inline-flex items-center gap-1 font-mono text-[8px] tracking-wider px-1.5 py-0.5 rounded border ${sc.bg} ${sc.color} ${sc.border}`}>
+                          <StatusIcon className="h-2.5 w-2.5" />
+                          {sc.label}
+                        </span>
                       </div>
+                      <p className="font-mono text-[10px] text-foreground mb-0.5">{inc.type}</p>
+                      <div className="flex items-center gap-2 text-[9px] font-mono text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Cctv className="h-2.5 w-2.5" />
+                          {inc.camera}
+                        </span>
+                        <span className="text-muted-foreground/40">|</span>
+                        <span>{inc.reported}</span>
+                      </div>
+                      {inc.assignedGroup && (
+                        <div className="mt-1 flex items-center gap-1 font-mono text-[9px]">
+                          <ShieldCheck className="h-2.5 w-2.5 text-tactical-cyan" />
+                          <span className="text-tactical-cyan">
+                            {groups.find((g) => g.id === inc.assignedGroup)?.callsign || inc.assignedGroup} responding
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-tactical-red px-1.5 py-0.5 rounded text-white font-mono text-[8px] font-bold tracking-widest">
-                      <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-                      LIVE
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Deployed forces by zone */}
+            <div
+              className={`glow-border rounded-xl bg-card noise-texture overflow-hidden border border-border/40 flex-1 ${
+                mounted ? "fade-in-up" : "opacity-0"
+              }`}
+              style={{ animationDelay: "400ms" }}
+            >
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40">
+                <Users className="h-3.5 w-3.5 text-tactical-green" />
+                <span className="font-mono font-bold text-sm text-foreground">Deployed ASF Forces</span>
+                <span className="font-mono text-[9px] text-muted-foreground ml-auto">
+                  {groups.length} units · {totalPersonnel} personnel
+                </span>
+              </div>
+              <div className="max-h-[320px] overflow-y-auto">
+                {byZone.map(({ zone, units, alerts }) => (
+                  <div key={zone}>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-secondary/40 border-y border-border/30">
+                      <span className={`h-2 w-2 rounded-full ${zoneMeta[zone].dot}`} />
+                      <span className={`font-mono text-[10px] font-bold tracking-wider ${zoneMeta[zone].color}`}>
+                        {zone} — {zoneMeta[zone].label}
+                      </span>
+                      <span className="ml-auto font-mono text-[9px] text-muted-foreground">
+                        {units.filter((u) => u.unitType === "officer").length} officers · {units.filter((u) => u.unitType === "vehicle").length} vehicles
+                        {alerts > 0 && <span className="text-tactical-red font-bold"> · {alerts} alert{alerts > 1 ? "s" : ""}</span>}
+                      </span>
                     </div>
-                    <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/80 to-transparent">
-                      <p className="font-mono text-[9px] text-white/90 font-medium truncate">{cam.name}</p>
-                      <p className="font-mono text-[8px] text-tactical-green tracking-widest">● ONLINE</p>
+                    <div className="divide-y divide-border/20">
+                      {units.map((unit) => {
+                        const isSelected = selectedGroup === unit.id;
+                        return (
+                          <div
+                            key={unit.id}
+                            className={`flex items-center gap-3 px-4 py-2 cursor-pointer transition-all ${
+                              isSelected
+                                ? "bg-tactical-green/5 border-l-2 border-l-tactical-green"
+                                : "hover:bg-accent/20 border-l-2 border-l-transparent"
+                            }`}
+                            onClick={() => setSelectedGroup(unit.id)}
+                          >
+                            <div className={`h-7 w-7 rounded-md border flex items-center justify-center shrink-0 ${
+                              unit.unitType === "officer"
+                                ? "bg-tactical-cyan/10 border-tactical-cyan/30"
+                                : "bg-tactical-green/10 border-tactical-green/30"
+                            }`}>
+                              {unit.unitType === "officer" ? (
+                                <User className="h-3.5 w-3.5 text-tactical-cyan" />
+                              ) : (
+                                <Car className="h-3.5 w-3.5 text-tactical-green" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1 font-mono">
+                              <p className="text-[10px] font-bold truncate">
+                                {unit.callsign} <span className="text-muted-foreground font-normal">· {unit.name}</span>
+                              </p>
+                              <p className="text-[9px] text-muted-foreground truncate">
+                                {unit.unitType === "officer" ? `${unit.rank} · ${unit.assignedTo}` : `${unit.vehicle} · ${unit.personnel} crew`}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className={`h-1.5 w-1.5 rounded-full ${unitStatusDot[unit.status] || "bg-muted"}`} />
+                              <span className="font-mono text-[8px] text-muted-foreground uppercase tracking-wider">
+                                {unit.status.replace("_", " ")}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {units.length === 0 && (
+                        <div className="px-4 py-3 text-center">
+                          <p className="font-mono text-[9px] text-muted-foreground">No units in this zone.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Critical Events */}
-            <div className={`rounded-xl bg-card border border-border/40 overflow-hidden flex-1 ${mounted ? "fade-in-up" : "opacity-0"}`} style={{ animationDelay: "500ms" }}>
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-3.5 w-3.5 text-tactical-red" />
-                  <span className="font-mono font-bold text-sm text-foreground">Critical Events</span>
-                </div>
-                <span className="font-mono text-[10px] text-muted-foreground">{criticalEvents.length} events</span>
-              </div>
-              <div className="divide-y divide-border/30">
-                {criticalEvents.map((evt) => {
-                  const Ic = evt.icon;
-                  return (
-                    <button
-                      key={evt.id}
-                      onClick={() => setSelectedEvent(evt)}
-                      className="w-full text-left px-4 py-3 hover:bg-tactical-red/5 transition-colors group border-l-2 border-tactical-red/60"
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <Ic className="h-3.5 w-3.5 text-tactical-red shrink-0 mt-0.5" />
-                        <div className="min-w-0">
-                          <p className="font-mono text-xs font-semibold text-foreground group-hover:text-tactical-red transition-colors truncate">{evt.title}</p>
-                          <p className="font-mono text-[10px] text-muted-foreground truncate">{evt.location} • {evt.camera}</p>
-                        </div>
-                        <span className="font-mono text-[10px] text-muted-foreground tabular-nums shrink-0 ml-auto">{evt.time}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* System Modules */}
-        <div>
-          <h2 className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase mb-3">System Modules</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {modules.map((mod, i) => (
-              <Link key={mod.id} href={mod.href}
-                className={`group glow-border corner-accent rounded-lg p-5 bg-card noise-texture block transition-all hover:translate-y-[-2px] ${mounted ? "fade-in-up" : "opacity-0"}`}
-                style={{ animationDelay: `${600 + i * 80}ms`, borderColor: "var(--border)" }}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-md ${mod.accentBg} border ${mod.accentBorder}`}>
-                      <mod.icon className={`h-4 w-4 ${mod.accentColor}`} />
-                    </div>
-                    <div>
-                      <p className="font-mono text-[10px] text-muted-foreground tracking-wider">{mod.id}</p>
-                      <h3 className="font-semibold text-sm tracking-tight">{mod.title}</h3>
-                    </div>
-                  </div>
-                  <span className={`font-mono text-[9px] tracking-wider px-1.5 py-0.5 rounded border ${mod.status === "LIVE" ? "text-tactical-green bg-tactical-green/10 border-tactical-green/30 blink" : "text-muted-foreground bg-muted/50 border-border"}`}>
-                    {mod.status}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pt-3 border-t border-border/50">
-                  <div>
-                    <p className="font-mono text-[9px] text-muted-foreground tracking-wider uppercase">{mod.stats.label}</p>
-                    <p className={`font-mono text-lg font-bold ${mod.accentColor}`}>{mod.stats.value}</p>
-                  </div>
-                  <div className="flex items-center gap-1 text-muted-foreground group-hover:text-tactical-green transition-colors">
-                    <span className="font-mono text-[10px] tracking-wide">OPEN</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
+
       </div>
 
       {/* Camera Modal */}
@@ -571,6 +879,11 @@ export default function DashboardPage() {
       {/* Event Detail Modal */}
       {selectedEvent && (
         <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
+
+      {/* Incident Detail Modal */}
+      {selectedIncidentDetail && (
+        <IncidentDetailModal incident={selectedIncidentDetail} onClose={() => setSelectedIncidentDetail(null)} />
       )}
     </>
   );

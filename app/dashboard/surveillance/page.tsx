@@ -31,6 +31,7 @@ const PTBMapCanvas = dynamic(() => import("@/components/ptb-map-canvas"), {
 });
 
 const CAMERA_FEEDS = [
+  { id: "CAM-101", name: "L1 MAIN GATE ANPR", zone: "Terminal L1", src: "/videos/vehicle_traffic_output_exit.mp4", status: "live" },
   { id: "CAM-112", name: "L1 DEPARTURES QUEUE COUNTER", zone: "Terminal L1", src: "/videos/counter_people in que.mp4", status: "live" },
   { id: "CAM-105", name: "L1 IMMIGRATION QUEUE COUNTER", zone: "Terminal L1", src: "/videos/counter_people_que.mp4", status: "live" },
   { id: "CAM-108", name: "L1 ARRIVALS BAGGAGE CLAIM CAROUSEL 4", zone: "Terminal L1", src: "/videos/bag_count_output baggeges.mp4", status: "live" },
@@ -78,6 +79,38 @@ const eventLevelConfig: Record<EventLevel, { bg: string; text: string; border: s
 const LIVE_EVENTS: LiveEvent[] = [
   {
     id: 1,
+    title: "NADRA Watchlist Match Alert",
+    camId: "CAM-301",
+    location: "L3 Boarding Gate 12 Exit",
+    cam: "CAM-301 • Gate Exit",
+    time: "12:15",
+    timestamp: "06/03/2026, 12:15:55",
+    color: "text-tactical-red",
+    level: "critical",
+    confidence: 93,
+    icon: Eye,
+    description: "NADRA Facial matching engine identified a critical watchlist match. CNIC masked for privacy (37405-*******-1). Active re-identification tracking initiated.",
+    action: "Notify intercept team. Lock tracking loop on twin.",
+    video: "/videos/face+_detection_airplane_Exit.mp4",
+  },
+  {
+    id: 2,
+    title: "Plate Captured — Outer Cordon",
+    camId: "CAM-101",
+    location: "L1 Outer Cordon Gate",
+    cam: "CAM-101 • Main Gate ANPR",
+    time: "13:15",
+    timestamp: "06/03/2026, 13:15:22",
+    color: "text-tactical-cyan",
+    level: "medium",
+    confidence: 92,
+    icon: Lock,
+    description: "ANPR Outer Cordon camera captured vehicle approaching. Plate resolved: LEB-17-4490.",
+    action: "Processing database lookup...",
+    video: "/videos/vehicle_traffic_output_exit.mp4",
+  },
+  {
+    id: 3,
     title: "Queue Congestion Alert",
     camId: "CAM-112",
     location: "L1 Intl Departures Corridor",
@@ -93,7 +126,7 @@ const LIVE_EVENTS: LiveEvent[] = [
     video: "/videos/counter_people in que.mp4",
   },
   {
-    id: 2,
+    id: 4,
     title: "Queue Overcrowding",
     camId: "CAM-105",
     location: "L1 Terminal Entrance Queue",
@@ -109,7 +142,7 @@ const LIVE_EVENTS: LiveEvent[] = [
     video: "/videos/counter_people_que.mp4",
   },
   {
-    id: 3,
+    id: 5,
     title: "Baggage Accumulation Alert",
     camId: "CAM-108",
     location: "L1 Arrivals Hall Carousel 4",
@@ -125,7 +158,7 @@ const LIVE_EVENTS: LiveEvent[] = [
     video: "/videos/bag_count_output baggeges.mp4",
   },
   {
-    id: 4,
+    id: 6,
     title: "FIA Counter Overcrowding",
     camId: "CAM-201",
     location: "L2 Passport Control Queue",
@@ -141,7 +174,7 @@ const LIVE_EVENTS: LiveEvent[] = [
     video: "/videos/Fia_counter.mp4",
   },
   {
-    id: 5,
+    id: 7,
     title: "Terminal Exit Traffic Alert",
     camId: "CAM-205",
     location: "L2 Terminal Departures Lane",
@@ -157,23 +190,7 @@ const LIVE_EVENTS: LiveEvent[] = [
     video: "/videos/vehicle_traffic_output_exit.mp4",
   },
   {
-    id: 6,
-    title: "Parking Plate Recognition Flag",
-    camId: "CAM-208",
-    location: "L2 Terminal Parking Area",
-    cam: "CAM-208 • Parking Area",
-    time: "13:15",
-    timestamp: "06/03/2026, 13:15:22",
-    color: "text-tactical-cyan",
-    level: "medium",
-    confidence: 92,
-    icon: Lock,
-    description: "Plate Recognition flagged suspicious vehicle or unregistered license plate entering the secure parking zone.",
-    action: "Crosscheck license plate in the main security database and alert nearest patrol unit.",
-    video: "/videos/plate_recognition_output_parking_area.mp4",
-  },
-  {
-    id: 7,
+    id: 8,
     title: "Counter Area Zone Breach",
     camId: "CAM-212",
     location: "L2 Counter Zone Tracker 1",
@@ -189,7 +206,7 @@ const LIVE_EVENTS: LiveEvent[] = [
     video: "/videos/zone_tracker_output_1_counter_area.mp4",
   },
   {
-    id: 8,
+    id: 9,
     title: "Counter Zone Tracking Alert",
     camId: "CAM-215",
     location: "L2 Counter Zone Tracker 2",
@@ -204,26 +221,11 @@ const LIVE_EVENTS: LiveEvent[] = [
     action: "Ensure queue barriers are properly aligned.",
     video: "/videos/zone_tracker_output_counter.mp4",
   },
-  {
-    id: 9,
-    title: "Boarding Gate Face Detection",
-    camId: "CAM-301",
-    location: "L3 Boarding Gate 12 Exit",
-    cam: "CAM-301 • Gate Exit",
-    time: "12:15",
-    timestamp: "06/03/2026, 12:15:55",
-    color: "text-tactical-red",
-    level: "critical",
-    confidence: 93,
-    icon: Eye,
-    description: "Face Detection module active. Analyzing passenger flows and profiling at the airplane exit corridor.",
-    action: "Verify boarding records and monitor exit flow.",
-    video: "/videos/face+_detection_airplane_Exit.mp4",
-  },
 ];
 
 const mapEventCamIdToMarkerId = (camId: string): string => {
   switch (camId) {
+    case "CAM-101": return "CAM-PTB-GATE-ANPR";
     case "CAM-112": return "CAM-PTB-CONG";
     case "CAM-105": return "CAM-PTB-LOIT";
     case "CAM-108": return "CAM-PTB-BAG";
@@ -376,10 +378,6 @@ export default function SurveillancePage() {
             <span className="font-mono text-[10px] text-muted-foreground tracking-wider">Tactical Blueprint Grid View</span>
           </div>
           <div className="flex items-center gap-4 font-mono text-[10px]">
-            <div className="flex items-center gap-1.5 text-tactical-green">
-              <Radio className="h-3.5 w-3.5 animate-pulse" />
-              <span className="tracking-wider">ONLINE</span>
-            </div>
             <span className="text-muted-foreground tabular-nums">Session: {sysTime}</span>
           </div>
         </div>

@@ -3,8 +3,125 @@
 import { useEffect, useState, useRef } from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, ImageOverlay, CircleMarker, Marker } from "react-leaflet";
-import { Camera, Shield, AlertTriangle, RefreshCw, Layers, Compass, Lock, X } from "lucide-react";
+import { MapContainer, TileLayer, CircleMarker, Marker, Polygon, Tooltip } from "react-leaflet";
+import { Camera, Shield, AlertTriangle, RefreshCw, Layers, Compass, Lock, X, User, ShieldAlert } from "lucide-react";
+import { useASF } from "@/components/asf-context";
+
+const statusColorMap: Record<string, string> = {
+  available: "#00FF9D",
+  en_route: "#FFB700",
+  on_scene: "#FF3D3D",
+  dispatched: "#FFB700",
+};
+
+const incidentColorMap: Record<string, string> = {
+  red: "#FF3D3D",
+  amber: "#FFB700",
+  blue: "#26C6DA",
+  green: "#00FF9D",
+  black: "#e6edf3",
+};
+
+const ZONE_A: [number, number][] = [
+  [33.5547045, 72.8605484],
+  [33.5560993, 72.8611492],
+  [33.5586027, 72.8469871],
+  [33.5611775, 72.8473733],
+  [33.5630729, 72.8350566],
+  [33.5602477, 72.8338979],
+  [33.5586027, 72.8332113],
+  [33.5554556, 72.8353571],
+  [33.5549191, 72.8381036],
+  [33.5580663, 72.8393053],
+];
+
+const ZONE_B: [number, number][] = [
+  [33.5612491, 72.8310226],
+  [33.5602120, 72.8293918],
+  [33.5612133, 72.8241132],
+  [33.5530236, 72.8220104],
+  [33.5505558, 72.8380178],
+  [33.5543111, 72.8390049],
+  [33.5550622, 72.8351854],
+  [33.5585669, 72.8326963],
+  [33.5607484, 72.8336404],
+];
+
+const ZONE_C: [number, number][] = [
+  [33.5557790, 72.8033028],
+  [33.5564942, 72.8003846],
+  [33.5460508, 72.7971230],
+  [33.5389685, 72.8464757],
+  [33.5436901, 72.8478489],
+  [33.5500566, 72.8493081],
+  [33.5517019, 72.8392659],
+  [33.5505558, 72.8380178],
+];
+
+const getVehicleIcon = (groupColor: string, statusColor: string, heading: number, selected: boolean) => {
+  const w = selected ? 20 : 16;
+  const h = selected ? 34 : 28;
+  const scale = selected ? 1.06 : 1;
+  return L.divIcon({
+    className: "qrf-vehicle-marker",
+    html: `
+      <div class="qrf-vehicle-wrap" style="width:${w}px;height:${h}px;transform:rotate(${heading}deg) scale(${scale});filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));">
+        <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 32 52" style="display:block;overflow:visible;">
+          <ellipse cx="17" cy="28" rx="13" ry="22" fill="rgba(0,0,0,0.22)" transform="translate(1,2)"/>
+          <ellipse cx="4.5" cy="13" rx="4"  ry="5.5" fill="#1a1a1a"/>
+          <ellipse cx="27.5" cy="13" rx="4" ry="5.5" fill="#1a1a1a"/>
+          <ellipse cx="4.5" cy="39" rx="4"  ry="5.5" fill="#1a1a1a"/>
+          <ellipse cx="27.5" cy="39" rx="4" ry="5.5" fill="#1a1a1a"/>
+          <ellipse cx="4.5" cy="13" rx="3"  ry="4.5" fill="#2a2a2a"/>
+          <ellipse cx="27.5" cy="13" rx="3" ry="4.5" fill="#2a2a2a"/>
+          <ellipse cx="4.5" cy="39" rx="3"  ry="4.5" fill="#2a2a2a"/>
+          <ellipse cx="27.5" cy="39" rx="3" ry="4.5" fill="#2a2a2a"/>
+          <ellipse cx="4.5" cy="13" rx="1.2" ry="1.8" fill="#555"/>
+          <ellipse cx="27.5" cy="13" rx="1.2" ry="1.8" fill="#555"/>
+          <ellipse cx="4.5" cy="39" rx="1.2" ry="1.8" fill="#555"/>
+          <ellipse cx="27.5" cy="39" rx="1.2" ry="1.8" fill="#555"/>
+          <path d="M16 2 C 22 2, 27 5, 28 9 L 28.5 13 L 28.5 16 L 28 17 L 28 35 L 28.5 36 L 28.5 39 L 28 43 C 27 47, 22 50, 16 50 C 10 50, 5 47, 4 43 L 3.5 39 L 3.5 36 L 4 35 L 4 17 L 3.5 16 L 3.5 13 L 4 9 C 5 5, 10 2, 16 2 Z" fill="${groupColor}" stroke="rgba(0,0,0,0.3)" stroke-width="0.8"/>
+          <path d="M10 3.5 C13 2.5, 19 2.5, 22 3.5 L 24 9 C 21 8, 11 8, 8 9 Z" fill="rgba(255,255,255,0.2)"/>
+          <path d="M8.5 15 C9 13.5, 11 12.5, 16 12.5 C21 12.5, 23 13.5, 23.5 15 L 23.5 22 C23 23, 21 23.5, 16 23.5 C11 23.5, 9 23, 8.5 22 Z" fill="#1a2330" opacity="0.9"/>
+          <rect x="7" y="24" width="18" height="8" rx="1.5" fill="rgba(255,255,255,0.18)"/>
+          <path d="M8.5 33 C9 32, 11 31.5, 16 31.5 C21 31.5, 23 32, 23.5 33 L 23.5 40 C23 41, 21 41.5, 16 41.5 C11 41.5, 9 41, 8.5 40 Z" fill="#1a2330" opacity="0.85"/>
+          <path d="M10 43 C13 44, 19 44, 22 43 L 24 47 C 21 49, 11 49, 8 47 Z" fill="rgba(255,255,255,0.12)"/>
+          <path d="M4 17.5 C2.5 17.5, 1 18.5, 1 20 C1 21.5, 2.5 22.5, 4 22.5" fill="${groupColor}" stroke="rgba(0,0,0,0.3)" stroke-width="0.6"/>
+          <path d="M28 17.5 C29.5 17.5, 31 18.5, 31 20 C31 21.5, 29.5 22.5, 28 22.5" fill="${groupColor}" stroke="rgba(0,0,0,0.3)" stroke-width="0.6"/>
+          <path d="M9 4.5 C11 3.5, 14 3, 16 3 L 16 5 C14 5, 11 5.5, 9.5 6.5 Z" fill="rgba(255,255,200,0.95)"/>
+          <path d="M23 4.5 C21 3.5, 18 3, 16 3 L 16 5 C18 5, 21 5.5, 22.5 6.5 Z" fill="rgba(255,255,200,0.95)"/>
+          <path d="M9 47.5 C11 48.5, 14 49, 16 49 L 16 47 C14 47, 11 46.5, 9.5 45.5 Z" fill="rgba(255,50,50,0.95)"/>
+          <path d="M23 47.5 C21 48.5, 18 49, 16 49 L 16 47 C18 47, 21 46.5, 22.5 45.5 Z" fill="rgba(255,50,50,0.95)"/>
+          <circle cx="16" cy="7.5" r="2.2" fill="${statusColor}" stroke="rgba(0,0,0,0.4)" stroke-width="0.5"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [w, h],
+    iconAnchor: [w / 2, h / 2],
+  });
+};
+
+const getOfficerIcon = (statusColor: string, selected: boolean) => {
+  const s = selected ? 30 : 24;
+  return L.divIcon({
+    className: "asf-officer-marker",
+    html: `
+      <div style="width:${s}px;height:${s}px;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));">
+        <svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 32 32" style="display:block;">
+          <circle cx="16" cy="16" r="14" fill="#0d1a2b" stroke="${statusColor}" stroke-width="2.2"/>
+          <path d="M9.5 11.5 C9.5 8.5, 12 6.5, 16 6.5 C20 6.5, 22.5 8.5, 22.5 11.5 L 22.5 12.2 L 9.5 12.2 Z" fill="${statusColor}"/>
+          <rect x="8.6" y="12" width="14.8" height="1.8" rx="0.9" fill="#1f2d3d" stroke="${statusColor}" stroke-width="0.5"/>
+          <circle cx="16" cy="9.6" r="1.1" fill="#0d1a2b"/>
+          <circle cx="16" cy="17" r="3.4" fill="#e8c39e"/>
+          <path d="M8.5 27.5 C8.5 23, 11.5 21, 16 21 C20.5 21, 23.5 23, 23.5 27.5 Z" fill="${statusColor}"/>
+          <path d="M14.4 21.2 L 16 24.4 L 17.6 21.2 Z" fill="#0d1a2b" opacity="0.85"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [s, s],
+    iconAnchor: [s / 2, s / 2],
+  });
+};
 
 // Load PDF.js from cdnjs dynamically
 const PDFJS_SRC = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
@@ -21,10 +138,26 @@ interface InteractiveMarker {
   details: string;
   videoUrl?: string;
   angle?: number; // Camera viewing angle
+  lat?: number;
+  lng?: number;
 }
 
 const mockMarkers: InteractiveMarker[] = [
   // ── LEVEL 1 MARKERS ──
+  {
+    id: "CAM-PTB-GATE-ANPR",
+    level: 1,
+    type: "camera",
+    name: "CAM-101 (L1 Main Gate ANPR)",
+    x: 20,
+    y: 75,
+    status: "active",
+    details: "Nominal gate entrance license plate reader active.",
+    videoUrl: "/videos/vehicle_traffic_output_exit.mp4",
+    angle: 90,
+    lat: 33.5570,
+    lng: 72.8495,
+  },
   {
     id: "CAM-PTB-CONG",
     level: 1,
@@ -36,6 +169,8 @@ const mockMarkers: InteractiveMarker[] = [
     details: "ANOMALY DETECTED: People in Queue Counter shows high queue density at departures corridor.",
     videoUrl: "/videos/counter_people in que.mp4",
     angle: 45,
+    lat: 33.5562,
+    lng: 72.8290,
   },
   {
     id: "CAM-PTB-LOIT",
@@ -48,6 +183,8 @@ const mockMarkers: InteractiveMarker[] = [
     details: "ANOMALY DETECTED: People Queue Counter shows building congestion near secure checkpoint.",
     videoUrl: "/videos/counter_people_que.mp4",
     angle: 135,
+    lat: 33.5552,
+    lng: 72.8310,
   },
   {
     id: "CAM-PTB-BAG",
@@ -60,6 +197,8 @@ const mockMarkers: InteractiveMarker[] = [
     details: "ANOMALY DETECTED: Baggage Count tracker flagged high volume of luggage building up on Carousel 4.",
     videoUrl: "/videos/bag_count_output baggeges.mp4",
     angle: 225,
+    lat: 33.5546,
+    lng: 72.8315,
   },
   {
     id: "GATE-PTB-01",
@@ -70,6 +209,8 @@ const mockMarkers: InteractiveMarker[] = [
     y: 72,
     status: "nominal",
     details: "Primary walk-through metal detectors and explosive sniffers.",
+    lat: 33.5568,
+    lng: 72.8490,
   },
   {
     id: "GUARD-PTB-01",
@@ -80,6 +221,8 @@ const mockMarkers: InteractiveMarker[] = [
     y: 65,
     status: "nominal",
     details: "On-duty mobile patrol in Central Atrium.",
+    lat: 33.5555,
+    lng: 72.8300,
   },
   {
     id: "GUARD-PTB-02",
@@ -90,6 +233,8 @@ const mockMarkers: InteractiveMarker[] = [
     y: 18,
     status: "nominal",
     details: "Stationary guard post at Baggage Claim staff exit.",
+    lat: 33.5540,
+    lng: 72.8325,
   },
 
   // ── LEVEL 2 MARKERS ──
@@ -104,6 +249,8 @@ const mockMarkers: InteractiveMarker[] = [
     details: "ANOMALY DETECTED: FIA Counter capacity Warning. Crowd build-up and queuing congestion.",
     videoUrl: "/videos/Fia_counter.mp4",
     angle: 45,
+    lat: 33.5550,
+    lng: 72.8305,
   },
   {
     id: "CAM-LVL2-LCONG",
@@ -116,6 +263,8 @@ const mockMarkers: InteractiveMarker[] = [
     details: "ANOMALY DETECTED: Vehicle Traffic Exit shows severe lane congestion at terminal exit point.",
     videoUrl: "/videos/vehicle_traffic_output_exit.mp4",
     angle: 135,
+    lat: 33.5535,
+    lng: 72.8385,
   },
   {
     id: "CAM-LVL2-BCONG",
@@ -128,6 +277,8 @@ const mockMarkers: InteractiveMarker[] = [
     details: "ANOMALY DETECTED: Plate Recognition flags suspicious/unregistered vehicle in parking area.",
     videoUrl: "/videos/plate_recognition_output_parking_area.mp4",
     angle: 385,
+    lat: 33.5525,
+    lng: 72.8270,
   },
   {
     id: "CAM-LVL2-DROP",
@@ -140,6 +291,8 @@ const mockMarkers: InteractiveMarker[] = [
     details: "ANOMALY DETECTED: Zone Tracker flags passenger crossing secure boundary lines near counter area 1.",
     videoUrl: "/videos/zone_tracker_output_1_counter_area.mp4",
     angle: 315,
+    lat: 33.5558,
+    lng: 72.8298,
   },
   {
     id: "CAM-LVL2-OVER",
@@ -152,6 +305,8 @@ const mockMarkers: InteractiveMarker[] = [
     details: "ANOMALY DETECTED: Zone Tracker monitoring crowd movements and securing boundaries near counter area 2.",
     videoUrl: "/videos/zone_tracker_output_counter.mp4",
     angle: 45,
+    lat: 33.5560,
+    lng: 72.8295,
   },
   {
     id: "GATE-LVL2-01",
@@ -162,6 +317,8 @@ const mockMarkers: InteractiveMarker[] = [
     y: 42,
     status: "nominal",
     details: "Level 2 secondary security terminal and body scanner scanners.",
+    lat: 33.5554,
+    lng: 72.8308,
   },
   {
     id: "GUARD-LVL2-01",
@@ -172,6 +329,8 @@ const mockMarkers: InteractiveMarker[] = [
     y: 35,
     status: "nominal",
     details: "Mobile rapid response guard patrolling Level 2 departures concourse.",
+    lat: 33.5551,
+    lng: 72.8320,
   },
   {
     id: "GUARD-LVL2-02",
@@ -182,6 +341,8 @@ const mockMarkers: InteractiveMarker[] = [
     y: 22,
     status: "nominal",
     details: "Stationary security post monitoring restricted gate access corridors.",
+    lat: 33.5559,
+    lng: 72.8285,
   },
 
   // ── LEVEL 3 MARKERS ──
@@ -193,9 +354,11 @@ const mockMarkers: InteractiveMarker[] = [
     x: 42,
     y: 55,
     status: "alert",
-    details: "ANOMALY DETECTED: Face Detection active. Tracking passenger flows at airplane exit corridor.",
+    details: "ANOMALY DETECTED: NADRA watchlist match CNIC: 37405-*******-1 (masked). Proactive re-identification tracking loop locked.",
     videoUrl: "/videos/face+_detection_airplane_Exit.mp4",
     angle: 45,
+    lat: 33.5568,
+    lng: 72.8262,
   },
   {
     id: "GATE-LVL3-01",
@@ -206,6 +369,8 @@ const mockMarkers: InteractiveMarker[] = [
     y: 72,
     status: "nominal",
     details: "Primary operations console and terminal jet bridge dispatch.",
+    lat: 33.5566,
+    lng: 72.8260,
   },
   {
     id: "GUARD-LVL3-01",
@@ -216,6 +381,8 @@ const mockMarkers: InteractiveMarker[] = [
     y: 48,
     status: "nominal",
     details: "Mobile patrol patrolling high-security gate corridors on Level 3.",
+    lat: 33.5564,
+    lng: 72.8265,
   },
 ];
 
@@ -237,6 +404,24 @@ export default function PTBMapCanvas({
   const [localActiveLevel, setLocalActiveLevel] = useState<1 | 2 | 3>(1);
   const activeLevel = externalActiveLevel !== undefined ? externalActiveLevel : localActiveLevel;
 
+  const { incidents, setIncidents, groups } = useASF();
+  const [anprStage, setAnprStage] = useState<"capture" | "enriching" | "enriched" | "alert" | "respond">("capture");
+  const [pushedToGate, setPushedToGate] = useState(false);
+  const [unattendedSeconds, setUnattendedSeconds] = useState(0);
+
+  // Unattended timer for RESPOND stage
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (anprStage === "respond") {
+      timer = setInterval(() => {
+        setUnattendedSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setUnattendedSeconds(0);
+    }
+    return () => clearInterval(timer);
+  }, [anprStage]);
+
   const handleLevelChange = (level: 1 | 2 | 3) => {
     if (onLevelChange) {
       onLevelChange(level);
@@ -246,9 +431,9 @@ export default function PTBMapCanvas({
   };
 
   const [pdfjsLoaded, setPdfjsLoaded] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState("Loading PDF library...");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>("active");
   const [dimensions, setDimensions] = useState({ width: 1000, height: 1000 });
   const [activeOverlay, setActiveOverlay] = useState<"all" | "cameras" | "guards" | "gates">("all");
 
@@ -493,111 +678,160 @@ export default function PTBMapCanvas({
 
         {/* LEAFLET WORKSPACE */}
         <div className="flex-1 w-full h-full relative bg-black">
-          {imageUrl && (
-            <MapContainer
-              crs={L.CRS.Simple}
-              bounds={bounds}
-              maxBounds={bounds}
-              maxBoundsViscosity={0.9}
-              minZoom={-1}
-              maxZoom={2}
-              zoom={0}
-              zoomControl={false}
-              style={{ height: "100%", width: "100%" }}
-            >
-              {/* Load custom static blueprint overlay */}
-              <ImageOverlay url={imageUrl} bounds={bounds} />
+          <MapContainer
+            center={[33.5505, 72.8280]}
+            zoom={14}
+            zoomControl={false}
+            style={{ height: "100%", width: "100%" }}
+          >
+            {/* Real geographical tiles */}
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maxZoom={19}
+            />
 
-              {/* Render dynamic interactive elements */}
-              {filteredMarkers.map((marker) => {
-                const coords = getMapCoords(marker.x, marker.y);
-                const isSelected = activeTabId === marker.id;
+            {/* Zone Polygons */}
+            <Polygon positions={ZONE_A} pathOptions={{ color: '#22c55e', weight: 2, fillColor: '#22c55e', fillOpacity: 0.08, interactive: false }}>
+              <Tooltip permanent direction="center" className="zone-label">ZONE A</Tooltip>
+            </Polygon>
+            <Polygon positions={ZONE_B} pathOptions={{ color: '#f59e0b', weight: 2, fillColor: '#f59e0b', fillOpacity: 0.08, interactive: false }}>
+              <Tooltip permanent direction="center" className="zone-label">ZONE B</Tooltip>
+            </Polygon>
+            <Polygon positions={ZONE_C} pathOptions={{ color: '#ef4444', weight: 2, fillColor: '#ef4444', fillOpacity: 0.08, interactive: false }}>
+              <Tooltip permanent direction="center" className="zone-label">ZONE C</Tooltip>
+            </Polygon>
 
-                let color = "#4CC3FF";
-                if (marker.status === "alert") color = "#FF3D3D";
-                else if (marker.type === "guard") color = "#FFB700";
-                else if (marker.type === "gate") color = "#00FF9D";
+            {/* Render dynamic QRF/ASF Patrol groups */}
+            {(activeOverlay === "all" || activeOverlay === "guards") ? groups.map((g) => {
+              const isSelected = false;
+              const statusColor = statusColorMap[g.status] || "#00FF9D";
+              const isVehicle = g.unitType === "vehicle";
+              const customIcon = isVehicle 
+                ? getVehicleIcon("#26C6DA", statusColor, g.heading, isSelected)
+                : getOfficerIcon(statusColor, isSelected);
 
-                // If it is a camera, we render it using our gorgeous custom camera PNG rotated and colored!
-                if (marker.type === "camera") {
-                  const angle = marker.angle || 0;
-                  const iconHtml = `
-                    <div class="relative flex items-center justify-center w-14 h-14" style="transform: translate(-14px, -14px);">
-                      <!-- Pulse Ring (Alert state only) -->
-                      ${marker.status === "alert"
-                      ? `<div class="absolute rounded-full animate-ping opacity-35" style="background-color: ${color}; width: 42px; height: 42px;"></div>`
-                      : ""
-                    }
-                      
-                      <!-- Inner Background Solid White Circle with Glowing Border -->
-                      <div class="absolute rounded-full border transition-all ${isSelected ? "border-white" : ""}" 
-                           style="background-color: #ffffff; border-color: ${isSelected ? "#ffffff" : color}; border-width: 2.5px; width: 44px; height: 44px; box-shadow: 0 0 15px ${color}60;">
-                      </div>
-                      
-                      <!-- Camera PNG Mask with Angle Rotation -->
-                      <div class="absolute transition-transform duration-300" style="transform: rotate(${angle}deg); width: 28px; height: 28px;">
-                        <div style="
-                          width: 100%;
-                          height: 100%;
-                          background-color: ${color};
-                          -webkit-mask-image: url('/camera-icon.png');
-                          mask-image: url('/camera-icon.png');
-                          -webkit-mask-size: contain;
-                          mask-size: contain;
-                          -webkit-mask-repeat: no-repeat;
-                          mask-repeat: no-repeat;
-                          -webkit-mask-position: center;
-                          mask-position: center;
-                        "></div>
-                      </div>
-                    </div>
-                  `;
+              return (
+                <Marker
+                  key={g.id}
+                  position={[g.lat, g.lng]}
+                  icon={customIcon}
+                >
+                  <Tooltip permanent={false} direction="top">
+                    <span className="font-mono text-xs font-bold text-foreground">
+                      {g.callsign} (${g.name})
+                    </span>
+                  </Tooltip>
+                </Marker>
+              );
+            }) : null}
 
-                  const customIcon = L.divIcon({
-                    html: iconHtml,
-                    className: "custom-leaflet-camera",
-                    iconSize: [28, 28],
-                    iconAnchor: [14, 14],
-                  });
+            {/* Render active incidents */}
+            {incidents.filter(inc => inc.status !== "resolved").map((inc) => {
+              const color = incidentColorMap[inc.typeCode || "red"] || "#FF3D3D";
+              
+              const alertHtml = `
+                <div class="relative flex items-center justify-center w-10 h-10" style="transform: translate(-10px, -10px);">
+                  <div class="absolute rounded-full animate-ping opacity-75" style="background-color: ${color}; width: 32px; height: 32px;"></div>
+                  <div class="absolute rounded-full" style="background-color: ${color}; width: 14px; height: 14px; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
+                </div>
+              `;
+              
+              const alertIcon = L.divIcon({
+                html: alertHtml,
+                className: "custom-leaflet-alert",
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
+              });
 
-                  return (
-                    <Marker
-                      key={marker.id}
-                      position={coords}
-                      icon={customIcon}
-                      eventHandlers={{
-                        click: () => {
-                          setOpenTabs((prev) => {
-                            if (prev.some((t) => t.id === marker.id)) return prev;
-                            return [...prev, marker];
-                          });
+              return (
+                <Marker
+                  key={inc.id}
+                  position={[inc.lat, inc.lng]}
+                  icon={alertIcon}
+                  eventHandlers={{
+                    click: () => {
+                      if (inc.id === "EVT-202" || inc.id === "EVT-201") {
+                        const marker = mockMarkers.find(m => m.id === "CAM-PTB-GATE-ANPR");
+                        if (marker) {
+                          setOpenTabs((prev) => prev.some(t => t.id === marker.id) ? prev : [...prev, marker]);
                           setActiveTabId(marker.id);
                           setIsPlayingFeed(true);
-                          if (onSelectCamera) {
-                            onSelectCamera(marker.id);
-                          }
-                        },
-                      }}
-                    >
-                    </Marker>
-                  );
-                }
+                          if (onSelectCamera) onSelectCamera(marker.id);
+                        }
+                      } else if (inc.id === "EVT-205" || inc.id === "EVT-206") {
+                        const marker = mockMarkers.find(m => m.id === "CAM-LVL3-FAULT");
+                        if (marker) {
+                          setOpenTabs((prev) => prev.some(t => t.id === marker.id) ? prev : [...prev, marker]);
+                          setActiveTabId(marker.id);
+                          setIsPlayingFeed(true);
+                          if (onSelectCamera) onSelectCamera(marker.id);
+                        }
+                      }
+                    }
+                  }}
+                >
+                  <Tooltip permanent direction="right" className="font-mono text-[9px] font-bold bg-[#0d1117cc] border border-border text-foreground px-1.5 py-0.5 rounded">
+                    <span>{inc.id}: {inc.type}</span>
+                  </Tooltip>
+                </Marker>
+              );
+            })}
 
-                // Render other points as beautiful colored circles
+            {/* Render dynamic interactive elements (Cameras, Gates, stationary guards) */}
+            {filteredMarkers.map((marker) => {
+              const coords: [number, number] = [marker.lat || 33.5505, marker.lng || 72.8280];
+              const isSelected = activeTabId === marker.id;
+
+              let color = "#4CC3FF";
+              if (marker.status === "alert") color = "#FF3D3D";
+              else if (marker.type === "guard") color = "#FFB700";
+              else if (marker.type === "gate") color = "#00FF9D";
+
+              if (marker.type === "camera") {
+                const angle = marker.angle || 0;
+                const iconHtml = `
+                  <div class="relative flex items-center justify-center w-14 h-14" style="transform: translate(-14px, -14px);">
+                    ${marker.status === "alert"
+                    ? `<div class="absolute rounded-full animate-ping opacity-35" style="background-color: ${color}; width: 42px; height: 42px;"></div>`
+                    : ""
+                  }
+                    
+                    <div class="absolute rounded-full border transition-all ${isSelected ? "border-white" : ""}" 
+                         style="background-color: #ffffff; border-color: ${isSelected ? "#ffffff" : color}; border-width: 2.5px; width: 44px; height: 44px; box-shadow: 0 0 15px ${color}60;">
+                    </div>
+                    
+                    <div class="absolute transition-transform duration-300" style="transform: rotate(${angle}deg); width: 28px; height: 28px;">
+                      <div style="
+                        width: 100%;
+                        height: 100%;
+                        background-color: ${color};
+                        -webkit-mask-image: url('/camera-icon.png');
+                        mask-image: url('/camera-icon.png');
+                        -webkit-mask-size: contain;
+                        mask-size: contain;
+                        -webkit-mask-repeat: no-repeat;
+                        mask-repeat: no-repeat;
+                        -webkit-mask-position: center;
+                        mask-position: center;
+                      "></div>
+                    </div>
+                  </div>
+                `;
+
+                const customIcon = L.divIcon({
+                  html: iconHtml,
+                  className: "custom-leaflet-camera",
+                  iconSize: [28, 28],
+                  iconAnchor: [14, 14],
+                });
+
                 return (
-                  <CircleMarker
+                  <Marker
                     key={marker.id}
-                    center={coords}
-                    radius={12}
-                    pathOptions={{
-                      color: isSelected ? "#FFFFFF" : color,
-                      fillColor: marker.status === "alert" ? "#FF3D3D" : "#0D1117",
-                      fillOpacity: marker.status === "alert" ? 0.8 : 1,
-                      weight: isSelected ? 3 : 2,
-                    }}
+                    position={coords}
+                    icon={customIcon}
                     eventHandlers={{
                       click: () => {
-                        // Open this element in a new tab!
                         setOpenTabs((prev) => {
                           if (prev.some((t) => t.id === marker.id)) return prev;
                           return [...prev, marker];
@@ -610,20 +844,48 @@ export default function PTBMapCanvas({
                       },
                     }}
                   >
-                  </CircleMarker>
+                  </Marker>
                 );
-              })}
-            </MapContainer>
-          )}
+              }
+
+              return (
+                <CircleMarker
+                  key={marker.id}
+                  center={coords}
+                  radius={12}
+                  pathOptions={{
+                    color: isSelected ? "#FFFFFF" : color,
+                    fillColor: marker.status === "alert" ? "#FF3D3D" : "#0D1117",
+                    fillOpacity: marker.status === "alert" ? 0.8 : 1,
+                    weight: isSelected ? 3 : 2,
+                  }}
+                  eventHandlers={{
+                    click: () => {
+                      setOpenTabs((prev) => {
+                        if (prev.some((t) => t.id === marker.id)) return prev;
+                        return [...prev, marker];
+                      });
+                      setActiveTabId(marker.id);
+                      setIsPlayingFeed(true);
+                      if (onSelectCamera) {
+                        onSelectCamera(marker.id);
+                      }
+                    },
+                  }}
+                >
+                </CircleMarker>
+              );
+            })}
+          </MapContainer>
 
           {/* Compass Rose Grid Aesthetic */}
           <div className="absolute bottom-3 left-3 pointer-events-none z-10 flex items-center gap-2 text-muted-foreground/40 font-mono text-[9px]">
             <Compass className="h-5 w-5 animate-spin" style={{ animationDuration: "30s" }} />
-            <span>IIA TERMINAL 1 • SECURITY GRID</span>
+            <span>ISLAMABAD INTERNATIONAL AIRPORT • INTEGRATED TACTICAL VIEW</span>
           </div>
 
           <div className="absolute bottom-3 right-3 pointer-events-none z-10 font-mono text-[9px] text-muted-foreground/40 uppercase tracking-widest">
-            IIA PTB LEVEL {activeLevel} MODEL
+            IIA GEOGRAPHIC LEVEL {activeLevel} VIEW
           </div>
         </div>
       </div>
@@ -701,114 +963,359 @@ export default function PTBMapCanvas({
 
             {/* Selected Tab content body */}
             <div className="flex-1 overflow-y-auto">
-              {/* Header info */}
-              <div>
-                <div className={`px-5 py-4 flex items-start justify-between border-b border-border/20 ${activeElement.status === "alert"
-                  ? "bg-gradient-to-r from-tactical-red/10 to-transparent"
-                  : activeElement.type === "camera"
-                    ? "bg-gradient-to-r from-tactical-cyan/10 to-transparent"
-                    : activeElement.type === "guard"
-                      ? "bg-gradient-to-r from-tactical-amber/10 to-transparent"
-                      : "bg-gradient-to-r from-tactical-green/10 to-transparent"
-                  }`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center border ${activeElement.status === "alert"
-                      ? "bg-tactical-red/20 border-tactical-red/40"
-                      : activeElement.type === "camera"
-                        ? "bg-tactical-cyan/20 border-tactical-cyan/40"
-                        : activeElement.type === "guard"
-                          ? "bg-tactical-amber/20 border-tactical-amber/40"
-                          : "bg-tactical-green/20 border-tactical-green/40"
-                      }`}>
-                      {activeElement.type === "camera" ? (
-                        <Camera className="h-5 w-5 text-tactical-cyan" />
-                      ) : activeElement.type === "gate" ? (
-                        <Lock className="h-5 w-5 text-tactical-green" />
-                      ) : activeElement.type === "guard" ? (
-                        <Shield className="h-5 w-5 text-tactical-amber" />
-                      ) : (
-                        <AlertTriangle className="h-5 w-5 text-tactical-red" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-mono text-sm font-bold tracking-wider">{activeElement.name}</h3>
-                      <span className="font-mono text-[10px] text-muted-foreground tracking-[0.15em]">L{activeElement.level} • {activeElement.id}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Information body */}
-                <div className="p-5 space-y-5">
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center py-2 border-b border-border/20">
-                      <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase">Floor Location</span>
-                      <span className="font-mono text-xs font-bold text-tactical-cyan">LEVEL {activeElement.level}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-border/20">
-                      <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase">Grid Coordinates</span>
-                      <span className="font-mono text-xs font-bold">X: {activeElement.x}%, Y: {activeElement.y}%</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-border/20">
-                      <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase">Status Code</span>
-                      <span
-                        className={`font-mono text-xs font-bold tracking-wider uppercase ${activeElement.status === "alert" ? "text-tactical-red" : "text-tactical-green"
-                          }`}
-                      >
-                        {activeElement.status}
-                      </span>
-                    </div>
-                    {activeElement.type === "camera" && activeElement.angle !== undefined && (
-                      <div className="flex justify-between items-center py-2 border-b border-border/20">
-                        <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase">Viewing Angle</span>
-                        <span className="font-mono text-xs font-bold text-tactical-cyan">{activeElement.angle}°</span>
-                      </div>
-                    )}
-                    <div className="pt-2.5">
-                      <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase block mb-1.5">Details</span>
-                      <p className="font-mono text-xs text-foreground/80 leading-relaxed bg-secondary/35 border border-border/40 p-3 rounded">
-                        {activeElement.details}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Video feed rendering directly in this tab */}
-                  {activeElement.type === "camera" && activeElement.videoUrl && (
-                    <div className="space-y-2.5 pt-2.5">
-                      <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase block">Live Surveillance Stream</span>
-                      <div
-                        onClick={() => setExpandedCamera(activeElement)}
-                        className="relative rounded-lg overflow-hidden border border-border/60 bg-zinc-950 cursor-pointer hover:border-tactical-cyan/60 group transition-all"
-                        style={{ aspectRatio: "16/9" }}
-                      >
-                        {isPlayingFeed ? (
-                          <>
-                            <video src={activeElement.videoUrl} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                              <span className="font-mono text-[10px] text-tactical-cyan font-bold tracking-widest uppercase bg-black/60 px-2.5 py-1 rounded border border-tactical-cyan/40">
-                                CLICK TO ENLARGE VIDEO FEED
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-zinc-950 hover:bg-zinc-900 transition-colors">
-                            <div className="w-12 h-12 rounded-full bg-tactical-cyan/10 border border-tactical-cyan/40 flex items-center justify-center text-tactical-cyan hover:scale-105 transition-transform">
-                              <Camera className="h-6 w-6" />
-                            </div>
-                            <span className="font-mono text-[10px] text-tactical-cyan tracking-widest uppercase font-bold">CONNECT STREAM</span>
-                          </div>
-                        )}
-                        <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[9px] font-bold tracking-widest pointer-events-none">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                          LIVEFEED
+              {activeElement.id === "CAM-PTB-GATE-ANPR" || activeElement.id === "CAM-LVL2-BCONG" ? (
+                <div className="flex flex-col h-full justify-between">
+                  <div>
+                    {/* Title and Header */}
+                    <div className={`px-5 py-4 flex items-start justify-between border-b border-border/20 ${
+                      ["enriched", "alert", "respond"].includes(anprStage) 
+                        ? "bg-gradient-to-r from-tactical-red/10 to-transparent" 
+                        : "bg-gradient-to-r from-tactical-cyan/10 to-transparent"
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center border ${
+                          ["enriched", "alert", "respond"].includes(anprStage)
+                            ? "bg-tactical-red/20 border-tactical-red/40"
+                            : "bg-tactical-cyan/20 border-tactical-cyan/40"
+                        }`}>
+                          <Camera className={`h-5 w-5 ${["enriched", "alert", "respond"].includes(anprStage) ? "text-tactical-red" : "text-tactical-cyan"}`} />
+                        </div>
+                        <div>
+                          <h3 className="font-mono text-sm font-bold tracking-wider">VEHICLE ANPR PIPELINE</h3>
+                          <span className="font-mono text-[10px] text-muted-foreground tracking-[0.15em] uppercase">
+                            {anprStage === "capture" && "STAGE 1: CAPTURING PLATE"}
+                            {anprStage === "enriching" && "STAGE 2: WATCHLIST LOOKUP..."}
+                            {anprStage === "enriched" && "STAGE 2: WATCHLIST MATCHED"}
+                            {anprStage === "alert" && "STAGE 3: HALT ADVISORY"}
+                            {anprStage === "respond" && "STAGE 4: RESPONDING & TRACKING"}
+                          </span>
                         </div>
                       </div>
-                      <span className="font-mono text-[9px] text-muted-foreground block text-right mt-1.5">
-                        *Click camera feed box to expand surveillance stream to fullscreen
-                      </span>
                     </div>
-                  )}
+
+                    {/* Stage Progress Selector */}
+                    <div className="px-5 py-2.5 bg-secondary/15 border-b border-border/20 flex items-center justify-between font-mono text-[9px] font-bold tracking-wider">
+                      {[
+                        { key: "capture", label: "1. CAPTURE" },
+                        { key: "enriched", label: "2. ENRICH" },
+                        { key: "alert", label: "3. ALERT" },
+                        { key: "respond", label: "4. RESPOND" },
+                      ].map((stage, idx) => {
+                        const isActive = anprStage === stage.key || (stage.key === "enriched" && anprStage === "enriching");
+                        const isCompleted = 
+                          (stage.key === "capture" && anprStage !== "capture") ||
+                          (stage.key === "enriched" && ["alert", "respond"].includes(anprStage)) ||
+                          (stage.key === "alert" && anprStage === "respond");
+                        
+                        return (
+                          <button
+                            key={stage.key}
+                            onClick={() => {
+                              if (stage.key === "enriched") {
+                                setAnprStage("enriching");
+                                setTimeout(() => setAnprStage("enriched"), 1200);
+                              } else {
+                                setAnprStage(stage.key as any);
+                                if (stage.key === "capture") setPushedToGate(false);
+                              }
+                            }}
+                            className={`px-2 py-1 rounded transition-all uppercase tracking-wider cursor-pointer border ${
+                              isActive ? "bg-tactical-cyan/20 text-tactical-cyan border-tactical-cyan/40" :
+                              isCompleted ? "bg-tactical-green/10 text-tactical-green border-tactical-green/20" : "text-muted-foreground border-transparent hover:text-foreground"
+                            }`}
+                          >
+                            {stage.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Body Content */}
+                    <div className="p-5 space-y-5">
+                      {/* Event Status Severity Card */}
+                      <div className={`p-4 rounded-lg border font-mono text-xs ${
+                        anprStage === "capture" ? "bg-tactical-cyan/5 border-tactical-cyan/35 text-tactical-cyan" :
+                        anprStage === "enriching" ? "bg-tactical-amber/5 border-tactical-amber/35 text-tactical-amber" :
+                        "bg-tactical-red/5 border-tactical-red/35 text-tactical-red"
+                      }`}>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">ALARM LEVEL</span>
+                          <span className="font-bold tracking-widest">
+                            {anprStage === "capture" ? "NEUTRAL (CAPTURE EVENT)" :
+                             anprStage === "enriching" ? "LOOKUP IN PROGRESS" : "CRITICAL RISK (WATCHLIST MATCH)"}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-foreground">
+                          {anprStage === "capture" && "Plate Captured — Outer Cordon"}
+                          {anprStage === "enriching" && "Watchlist Verification active..."}
+                          {["enriched", "alert", "respond"].includes(anprStage) && "Watchlist Plate Match Detected"}
+                        </h4>
+                      </div>
+
+                      {/* Metadata list */}
+                      <div className="space-y-2.5 font-mono text-xs">
+                        {/* Labeled Plate Data Point */}
+                        <div className="flex justify-between items-center py-2 border-b border-border/20">
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">OCR PLATE NO</span>
+                          <span className="font-bold text-foreground text-sm tracking-widest bg-secondary/80 px-2 py-0.5 rounded border border-border">
+                            LEB-17-4490
+                          </span>
+                        </div>
+
+                        {/* Watchlist verification source */}
+                        {["enriched", "alert", "respond"].includes(anprStage) && (
+                          <div className="flex justify-between items-center py-2 border-b border-border/20">
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">WATCHLIST LOOKUP</span>
+                            <span className="font-bold text-tactical-red">
+                              FLAGGED — Prior-Incident (ASF Watchlist Register)
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Advisory & Actionable instructions */}
+                        {anprStage === "alert" && (
+                          <div className="border border-tactical-red/40 bg-tactical-red/5 p-3.5 rounded-lg space-y-2">
+                            <span className="text-[10px] text-tactical-red font-bold uppercase tracking-widest block">OPERATOR DIRECTIVE</span>
+                            <p className="font-bold text-tactical-red text-sm">ACTION REQUIRED: Halt & Verify</p>
+                            <div className="flex items-center justify-between pt-1">
+                              <button
+                                onClick={() => setPushedToGate(true)}
+                                className="px-3 py-1.5 rounded bg-tactical-red text-white text-[10px] font-bold hover:bg-tactical-red/80 transition-colors cursor-pointer"
+                              >
+                                Push to Gate Post
+                              </button>
+                              {pushedToGate && (
+                                <span className="px-2 py-1 rounded bg-tactical-green/15 text-tactical-green text-[9px] border border-tactical-green/40 font-bold uppercase flex items-center gap-1 animate-pulse">
+                                  ✓ Pushed to Gate Post
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Handoff, Map Twin link, and live unattended timer */}
+                        {anprStage === "respond" && (
+                          <div className="space-y-4">
+                            {/* Camera Handoff indicator */}
+                            <div className="bg-secondary/35 border border-border/40 p-3 rounded-lg space-y-2">
+                              <span className="text-[10px] text-muted-foreground uppercase tracking-widest block">CAMERA HANDOFF TRACK</span>
+                              <div className="flex items-center gap-2 font-bold text-xs text-tactical-cyan">
+                                <span>CAM-101 (Gate Cam)</span>
+                                <span>➔</span>
+                                <span>CAM-208 (Parking Cam)</span>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground block">
+                                Handoff complete. Suspect vehicle parked, driver exited cabin.
+                              </span>
+                            </div>
+
+                            {/* Live countdown timer */}
+                            <div className="flex justify-between items-center py-2 border-b border-border/20 bg-tactical-red/5 px-2 rounded border border-tactical-red/20 animate-pulse">
+                              <span className="text-[10px] text-tactical-red font-bold uppercase tracking-widest flex items-center gap-1.5">
+                                ⏱ UNATTENDED VEHICLE TIMER
+                              </span>
+                              <span className="font-bold text-tactical-red text-sm tabular-nums">
+                                {String(Math.floor(unattendedSeconds / 60)).padStart(2, "0")}:{String(unattendedSeconds % 60).padStart(2, "0")}
+                              </span>
+                            </div>
+
+                            {/* Twin Map Link to Shared Store */}
+                            <div className="bg-tactical-cyan/5 border border-tactical-cyan/30 p-3 rounded-lg space-y-1">
+                              <span className="text-[10px] text-tactical-cyan font-bold uppercase tracking-widest block">SHARED STORE LINK</span>
+                              <p className="text-foreground">Incident Twin ID: <span className="font-bold text-tactical-cyan">INC-101</span></p>
+                              <span className="text-[10px] text-muted-foreground block">
+                                Mappable incident synced. Renders as a suspicious vehicle occupant incident on the ASF Tactical Map.
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Live Surveillance stream player */}
+                      <div className="space-y-2.5 pt-2.5">
+                        <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase block">
+                          Live Surveillance Stream ({anprStage === "respond" ? "CAM-208" : "CAM-101"})
+                        </span>
+                        <div
+                          className="relative rounded-lg overflow-hidden border border-border/60 bg-zinc-950"
+                          style={{ aspectRatio: "16/9" }}
+                        >
+                          {anprStage === "enriching" ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-zinc-950">
+                              <div className="w-10 h-10 rounded-full border-2 border-tactical-amber/20 border-t-2 border-t-tactical-amber animate-spin" />
+                              <span className="font-mono text-[9px] text-tactical-amber tracking-widest uppercase font-bold blink">
+                                CHECKING WATCHLIST REGISTERS...
+                              </span>
+                            </div>
+                          ) : (
+                            <video 
+                              key={anprStage === "respond" ? "CAM-208" : "CAM-101"}
+                              src={anprStage === "respond" ? "/videos/plate_recognition_output_parking_area.mp4" : "/videos/vehicle_traffic_output_exit.mp4"} 
+                              autoPlay muted loop playsInline 
+                              className="absolute inset-0 w-full h-full object-cover" 
+                            />
+                          )}
+                          <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[9px] font-bold tracking-widest pointer-events-none z-10">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            LIVEFEED
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div>
+                  {/* Header info */}
+                  <div className={`px-5 py-4 flex items-start justify-between border-b border-border/20 ${activeElement.status === "alert"
+                    ? "bg-gradient-to-r from-tactical-red/10 to-transparent"
+                    : activeElement.type === "camera"
+                      ? "bg-gradient-to-r from-tactical-cyan/10 to-transparent"
+                      : activeElement.type === "guard"
+                        ? "bg-gradient-to-r from-tactical-amber/10 to-transparent"
+                        : "bg-gradient-to-r from-tactical-green/10 to-transparent"
+                    }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center border ${activeElement.status === "alert"
+                        ? "bg-tactical-red/20 border-tactical-red/40"
+                        : activeElement.type === "camera"
+                          ? "bg-tactical-cyan/20 border-tactical-cyan/40"
+                          : activeElement.type === "guard"
+                            ? "bg-tactical-amber/20 border-tactical-amber/40"
+                            : "bg-tactical-green/20 border-tactical-green/40"
+                        }`}>
+                        {activeElement.type === "camera" ? (
+                          <Camera className="h-5 w-5 text-tactical-cyan" />
+                        ) : activeElement.type === "gate" ? (
+                          <Lock className="h-5 w-5 text-tactical-green" />
+                        ) : activeElement.type === "guard" ? (
+                          <Shield className="h-5 w-5 text-tactical-amber" />
+                        ) : (
+                          <AlertTriangle className="h-5 w-5 text-tactical-red" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-mono text-sm font-bold tracking-wider">{activeElement.name}</h3>
+                        <span className="font-mono text-[10px] text-muted-foreground tracking-[0.15em]">L{activeElement.level} • {activeElement.id}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Information body */}
+                  <div className="p-5 space-y-5">
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center py-2 border-b border-border/20">
+                        <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase">Floor Location</span>
+                        <span className="font-mono text-xs font-bold text-tactical-cyan">LEVEL {activeElement.level}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border/20">
+                        <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase">Grid Coordinates</span>
+                        <span className="font-mono text-xs font-bold">X: {activeElement.x}%, Y: {activeElement.y}%</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border/20">
+                        <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase">Status Code</span>
+                        <span
+                          className={`font-mono text-xs font-bold tracking-wider uppercase ${activeElement.status === "alert" ? "text-tactical-red" : "text-tactical-green"
+                            }`}
+                        >
+                          {activeElement.status}
+                        </span>
+                      </div>
+                      {activeElement.type === "camera" && activeElement.angle !== undefined && (
+                        <div className="flex justify-between items-center py-2 border-b border-border/20">
+                          <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase">Viewing Angle</span>
+                          <span className="font-mono text-xs font-bold text-tactical-cyan">{activeElement.angle}°</span>
+                        </div>
+                      )}
+                      {activeElement.id === "CAM-LVL3-FAULT" ? (
+                        <div className="pt-2.5 space-y-4">
+                          <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase block mb-1.5">NADRA FACIAL + TRACKING STATUS</span>
+                          <div className="bg-secondary/35 border border-border/40 p-3 rounded-lg space-y-2 font-mono text-xs">
+                            <div className="flex justify-between items-center pb-1.5 border-b border-border/20">
+                              <span className="text-muted-foreground">ENGINE:</span>
+                              <span className="text-tactical-cyan font-bold">NADRA Matcher v4</span>
+                            </div>
+                            <div className="flex justify-between items-center pb-1.5 border-b border-border/20">
+                              <span className="text-muted-foreground">MATCHED CNIC:</span>
+                              <span className="text-foreground">37405-*******-1 (Masked per RBAC)</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">CONFIDENCE:</span>
+                              <span className="text-tactical-red font-bold">93% Match</span>
+                            </div>
+                          </div>
+
+                          {/* Stage Timeline */}
+                          <div className="space-y-3 pt-2 font-mono text-xs">
+                            <span className="text-[10px] text-muted-foreground tracking-widest uppercase block mb-1">DETECTION SIGNAL PATH</span>
+                            {[
+                              { stage: "CAPTURE", desc: "Passengers deplane & head to terminal", detail: "flow count P2", done: true, color: "text-tactical-green" },
+                              { stage: "ENRICH", desc: "Immigration hall face match matched 1:few vs enrolled watchlist", detail: "NADRA: match CNIC masked", done: true, color: "text-tactical-green" },
+                              { stage: "TRACK", desc: "Locking subject & re-identification across cameras", detail: "live thread on twin", done: true, color: "text-tactical-cyan" },
+                              { stage: "ALERT", desc: "Subject reaches exit corridor, RBAC alert triggered", detail: "intercept team notified", done: true, color: "text-tactical-red" },
+                            ].map((step, idx) => (
+                              <div key={idx} className="flex gap-3 items-start border-l border-border/40 pl-3 relative pb-2 last:pb-0">
+                                <div className="absolute -left-1.5 top-1.5 w-3.5 h-3.5 rounded-full bg-[#080d12] border border-tactical-cyan flex items-center justify-center">
+                                  <div className="h-1.5 w-1.5 rounded-full bg-tactical-cyan animate-pulse" />
+                                </div>
+                                <div>
+                                  <span className={`font-bold block tracking-wider ${step.color}`}>{step.stage}</span>
+                                  <p className="text-muted-foreground text-[10px] leading-relaxed">{step.desc}</p>
+                                  <span className="text-[9px] tracking-wide text-tactical-cyan bg-tactical-cyan/15 px-1.5 py-0.5 rounded block w-fit mt-1">{step.detail}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="pt-2.5">
+                          <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase block mb-1.5">Details</span>
+                          <p className="font-mono text-xs text-foreground/80 leading-relaxed bg-secondary/35 border border-border/40 p-3 rounded">
+                            {activeElement.details}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Video feed rendering directly in this tab */}
+                    {activeElement.type === "camera" && activeElement.videoUrl && (
+                      <div className="space-y-2.5 pt-2.5">
+                        <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase block">Live Surveillance Stream</span>
+                        <div
+                          onClick={() => setExpandedCamera(activeElement)}
+                          className="relative rounded-lg overflow-hidden border border-border/60 bg-zinc-950 cursor-pointer hover:border-tactical-cyan/60 group transition-all"
+                          style={{ aspectRatio: "16/9" }}
+                        >
+                          {isPlayingFeed ? (
+                            <>
+                              <video src={activeElement.videoUrl} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <span className="font-mono text-[10px] text-tactical-cyan font-bold tracking-widest uppercase bg-black/60 px-2.5 py-1 rounded border border-tactical-cyan/40">
+                                  CLICK TO ENLARGE VIDEO FEED
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-zinc-950 hover:bg-zinc-900 transition-colors">
+                              <div className="w-12 h-12 rounded-full bg-tactical-cyan/10 border border-tactical-cyan/40 flex items-center justify-center text-tactical-cyan hover:scale-105 transition-transform">
+                                <Camera className="h-6 w-6" />
+                              </div>
+                              <span className="font-mono text-[10px] text-tactical-cyan tracking-widest uppercase font-bold">CONNECT STREAM</span>
+                            </div>
+                          )}
+                          <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[9px] font-bold tracking-widest pointer-events-none">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            LIVEFEED
+                          </div>
+                        </div>
+                        <span className="font-mono text-[9px] text-muted-foreground block text-right mt-1.5">
+                          *Click camera feed box to expand surveillance stream to fullscreen
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Resolve alert actions */}

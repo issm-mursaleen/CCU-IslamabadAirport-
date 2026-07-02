@@ -53,12 +53,6 @@ export default function DashboardLayout({
             <div className="flex items-center gap-3">
               <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-tactical-green transition-colors" />
               <Separator orientation="vertical" className="h-4 bg-border/60" />
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-tactical-green blink" />
-                <span className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground uppercase">
-                  System Online
-                </span>
-              </div>
             </div>
             <div className="flex items-center gap-4">
               <span className="font-mono text-[10px] text-muted-foreground tracking-wide">
