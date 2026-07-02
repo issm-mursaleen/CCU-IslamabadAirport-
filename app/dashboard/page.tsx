@@ -32,6 +32,7 @@ import {
   Cctv,
   Send,
   ChevronRight,
+  FileText,
 } from "lucide-react";
 
 /* ── Dynamic import for Leaflet map (needs window) ── */
@@ -289,6 +290,7 @@ function CameraModal({ cam, onClose }: { cam: typeof cameras[0]; onClose: () => 
 function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClose: () => void }) {
   const sc = zoneAlertStatusConfig[incident.status];
   const StatusIcon = sc.icon;
+  const [showFirDetail, setShowFirDetail] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -394,17 +396,44 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                     <span className="text-foreground/90">{incident.detail.flagReason}</span>
                   </div>
                 )}
-                {incident.detail.firNo && (
-                  <div className="bg-card border border-border/40 p-2.5 rounded">
-                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FIR NO</span>
-                    <span className="font-bold text-foreground">{incident.detail.firNo}</span>
+                {incident.kind === "stolen_vehicle" && incident.detail.firImage ? (
+                  <div
+                    onClick={() => setShowFirDetail(true)}
+                    className="flex gap-3 p-3 rounded-lg bg-tactical-red/5 border border-tactical-red/25 cursor-pointer hover:border-tactical-red/50 transition-colors group col-span-2"
+                  >
+                    <div className="relative h-20 w-14 rounded overflow-hidden border border-border shrink-0 bg-black">
+                      <img src={incident.detail.firImage} alt="Scanned FIR" className="h-full w-full object-cover opacity-90" />
+                      <div className="absolute inset-x-0 top-0 h-0.5 bg-tactical-green/80 animate-pulse" />
+                    </div>
+                    <div className="flex-1 min-w-0 font-mono">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <FileText className="h-3.5 w-3.5 text-tactical-red" />
+                        <span className="text-[10px] font-bold text-tactical-red tracking-wider">FIR MATCH — SCANNED DOCUMENT</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground leading-relaxed">
+                        FIR No. <span className="text-foreground font-bold">{incident.detail.firNo}</span> · {incident.detail.policeStation}
+                        <br />Dated {incident.detail.firDate} · Plate <span className="text-tactical-red font-bold">{incident.detail.plate}</span>
+                      </p>
+                      <span className="text-[8px] text-tactical-cyan tracking-widest uppercase group-hover:underline">
+                        Click to view scanned FIR →
+                      </span>
+                    </div>
                   </div>
-                )}
-                {incident.detail.complainant && (
-                  <div className="bg-card border border-border/40 p-2.5 rounded col-span-2">
-                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">COMPLAINANT INFO</span>
-                    <span className="text-foreground">{incident.detail.complainant} (Contact: {incident.detail.contact})</span>
-                  </div>
+                ) : (
+                  <>
+                    {incident.detail.firNo && (
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FIR NO</span>
+                        <span className="font-bold text-foreground">{incident.detail.firNo}</span>
+                      </div>
+                    )}
+                    {incident.detail.complainant && (
+                      <div className="bg-card border border-border/40 p-2.5 rounded col-span-2">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">COMPLAINANT INFO</span>
+                        <span className="text-foreground">{incident.detail.complainant} (Contact: {incident.detail.contact})</span>
+                      </div>
+                    )}
+                  </>
                 )}
                 {incident.detail.peopleCount && (
                   <div className="bg-card border border-border/40 p-2.5 rounded">
@@ -469,6 +498,66 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
           </button>
         </div>
       </div>
+
+      {/* ── FIR SCAN MODAL ── */}
+      {showFirDetail && incident.kind === "stolen_vehicle" && incident.detail?.firImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+            onClick={() => setShowFirDetail(false)}
+          />
+          <div className="relative w-full max-w-3xl max-h-[90vh] bg-card border border-tactical-red/30 rounded-xl overflow-hidden shadow-2xl flex flex-col z-55 animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-5 py-3 border-b border-border/50 flex items-center justify-between bg-tactical-red/10 text-tactical-red shrink-0 font-mono">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <span className="text-sm font-bold tracking-wide">
+                  SCANNED FIR — No. {incident.detail?.firNo} · STOLEN VEHICLE {incident.detail?.plate}
+                </span>
+              </div>
+              <button
+                onClick={() => setShowFirDetail(false)}
+                className="p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-0 overflow-y-auto">
+              {/* FIR document */}
+              <div className="relative bg-black/60 p-4 flex items-start justify-center">
+                <img
+                  src={incident.detail?.firImage}
+                  alt={`Scanned FIR No. ${incident.detail?.firNo}`}
+                  className="max-h-[70vh] w-auto rounded border border-border/60 shadow-lg"
+                />
+                <div className="absolute top-6 left-6 px-2 py-0.5 rounded bg-black/70 border border-tactical-green/40 text-[8px] font-mono font-bold tracking-widest text-tactical-green flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-tactical-green blink" />
+                  OCR SCAN COMPLETE
+                </div>
+              </div>
+              {/* Extracted fields */}
+              <div className="p-4 space-y-2 border-l border-border/40 font-mono text-[10px]">
+                <p className="text-[9px] tracking-[0.15em] text-muted-foreground uppercase mb-1">
+                  Extracted FIR Data
+                </p>
+                {[
+                  ["FIR No.", incident.detail?.firNo || ""],
+                  ["Date Lodged", incident.detail?.firDate || ""],
+                  ["Police Station", incident.detail?.policeStation || ""],
+                  ["Complainant", incident.detail?.complainant || ""],
+                  ["Contact", incident.detail?.contact || ""],
+                  ["Vehicle", incident.detail?.vehicleDesc || ""],
+                  ["Registration", incident.detail?.plate || ""],
+                ].map(([k, v]) => (
+                  <div key={k} className="bg-accent/30 rounded px-2.5 py-1.5">
+                    <span className="text-muted-foreground block text-[8px] uppercase tracking-wider">{k}</span>
+                    <span className={k === "Registration" ? "text-tactical-red font-bold tracking-widest" : "text-foreground"}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
