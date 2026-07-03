@@ -171,20 +171,24 @@ const seedIncidents: Incident[] = [
   /* Zone C — runway & apron area */
   {
     id: "EVT-205", type: "FLAGGED PERSON", typeCode: "red", kind: "flagged_person",
-    description: "Facial recognition hit at aircraft exit — passenger matches FIA AML watchlist (money laundering). Intercept before landside egress.",
+    description: "Facial recognition hit at aircraft exit — wanted fugitive Muhammad Haroon identified under active arrest warrant No. 826/18. Intercept before landside egress.",
     site: "Zone C — Apron, Aircraft Exit", zone: "Zone C",
     camera: "CAM-402 (Apron — Aircraft Exit)", videoSrc: "/videos/face+_detection_airplane_Exit.mp4",
     lat: 33.5470, lng: 72.8385, reported: "14:19 PKT", requiredCap: "armed",
     status: "pending", assignedGroup: null, facialMatch: true,
     detail: {
       confidence: 96,
-      personName: "Salman Qureshi",
-      personId: "FIA-WL-2231",
-      flagReason: "Money Laundering — FIA Red Book / AML Watchlist",
-      threatLevel: "HIGH",
-      passport: "AK9182734",
+      personName: "Muhammad Haroon",
+      personId: "FIA-WL-9876",
+      flagReason: "Wanted Fugitive — Court Warrant 826/18",
+      threatLevel: "CRITICAL",
+      passport: "PK77651",
       nationality: "Pakistani",
       flight: "PK-301 (KHI → ISB)",
+      firNo: "826/18",
+      firDate: "11-Jan-2023",
+      policeStation: "Bhara Kahu, Islamabad",
+      firImage: "/suspect_warrant.png",
     },
   },
   {
@@ -220,6 +224,11 @@ const ASFContext = createContext<ASFContextType | null>(null);
 export function ASFProvider({ children }: { children: ReactNode }) {
   const [groups, setGroups] = useState<ASFGroup[]>(seedGroups);
   const [incidents, setIncidents] = useState<Incident[]>(seedIncidents);
+
+  useEffect(() => {
+    setIncidents(seedIncidents);
+    setGroups(seedGroups);
+  }, []);
 
   /* GPS drift runs globally so positions update even when not on ASF page */
   useEffect(() => {
