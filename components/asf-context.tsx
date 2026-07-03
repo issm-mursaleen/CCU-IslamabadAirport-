@@ -113,15 +113,15 @@ const seedIncidents: Incident[] = [
   /* Zone A — road outside the airport */
   {
     id: "EVT-201", type: "STOLEN VEHICLE", typeCode: "red", kind: "stolen_vehicle",
-    description: "ANPR hit on airport approach road — plate BAF-678 matches stolen-vehicle FIR No. 932/25 lodged 14-06-2025. Scanned FIR retrieved and attached.",
+    description: "ANPR hit on airport approach road — plate LED-11-3422 matches stolen-vehicle FIR No. 932/25 lodged 14-06-2025. Scanned FIR retrieved and attached.",
     site: "Zone A — Main Approach Road", zone: "Zone A",
     camera: "CAM-114 (ANPR — Approach Rd)", videoSrc: "/videos/vehicle_traffic_output_exit.mp4",
     lat: 33.5592, lng: 72.8418, reported: "14:32 PKT", requiredCap: "armed",
     status: "pending", assignedGroup: null, plateMatch: true,
     detail: {
       confidence: 97,
-      plate: "BAF-678",
-      vehicleDesc: "Suzuki Cultus (White)",
+      plate: "LED-11-3422",
+      vehicleDesc: "Toyota Grande (White Sedan)",
       firNo: "932/25",
       firDate: "14-06-2025",
       policeStation: "PS Airport, Rawalpindi",

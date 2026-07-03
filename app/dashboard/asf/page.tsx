@@ -609,194 +609,326 @@ export default function ASFPage() {
                     </button>
                   </div>
                 </div>
-                <div className="p-4 space-y-3 overflow-y-auto flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className={`flex items-center gap-1.5 font-mono text-[10px] ${zoneMeta[activeIncident.zone].color}`}>
-                      <span className={`h-2 w-2 rounded-full ${zoneMeta[activeIncident.zone].dot}`} />
-                      {activeIncident.zone} — {zoneMeta[activeIncident.zone].label}
-                    </span>
-                    <span className="font-mono text-[10px] text-muted-foreground">{activeIncident.reported}</span>
-                  </div>
-                  <p className="font-mono text-[11px] text-muted-foreground leading-relaxed">
-                    {activeIncident.description}
-                  </p>
+                <div className="p-4 space-y-3.5 overflow-y-auto flex-1 font-mono text-xs">
+                  {activeIncident.kind === "stolen_vehicle" ? (
+                    <>
+                      {/* Top Row: Split 50/50 */}
+                      <div className="grid grid-cols-1 md:grid-cols-[1fr_95px] gap-4">
+                        {/* Left Column: Basic Info */}
+                        <div className="space-y-3">
+                          {/* Status and Zone */}
+                          <div className="flex flex-wrap gap-2">
+                            <span className={`inline-flex items-center gap-1.5 font-mono text-[9px] font-bold px-2 py-0.5 rounded border ${incidentStatusConfig[activeIncident.status].bg} ${incidentStatusConfig[activeIncident.status].color} ${incidentStatusConfig[activeIncident.status].border} uppercase tracking-wider`}>
+                              {(() => {
+                                const StatusIcon = incidentStatusConfig[activeIncident.status].icon;
+                                return <StatusIcon className="h-3 w-3" />;
+                              })()}
+                              {incidentStatusConfig[activeIncident.status].label}
+                            </span>
+                            <span className={`inline-flex items-center gap-1.5 font-mono text-[9px] font-bold px-2 py-0.5 rounded border bg-secondary/40 border-border uppercase tracking-wider ${zoneMeta[activeIncident.zone].color}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${zoneMeta[activeIncident.zone].dot}`} />
+                              {activeIncident.zone}
+                            </span>
+                          </div>
 
-                  {/* Live camera feed */}
-                  {activeIncident.videoSrc && (
-                    <div
-                      onClick={() => setShowFeedDetail(true)}
-                      className="relative w-full aspect-video rounded-lg overflow-hidden border border-tactical-red/30 bg-black group shadow-[0_0_15px_rgba(239,68,68,0.1)] cursor-pointer hover:border-tactical-red/60 transition-colors"
-                    >
-                      <video
-                        src={activeIncident.videoSrc}
-                        autoPlay loop muted playsInline
-                        className="w-full h-full object-cover opacity-90 group-hover:scale-102 transition-transform duration-700"
-                      />
-                      <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(rgba(0,255,157,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
-                      <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[8px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-tactical-red blink" />
-                        {activeIncident.camera}
+                          {/* Details Table */}
+                          <div className="space-y-0 rounded-xl border border-border/40 overflow-hidden bg-secondary/20">
+                            {[
+                              { label: "Site Location", value: activeIncident.site },
+                              { label: "Reporting Cam", value: activeIncident.camera },
+                              { label: "Report Time", value: activeIncident.reported },
+                              { label: "Required Capability", value: activeIncident.requiredCap.toUpperCase() },
+                            ].map(({ label, value }, i, arr) => (
+                              <div key={label} className={`flex items-center justify-between px-3 py-1.5 ${i !== arr.length - 1 ? "border-b border-border/20" : ""}`}>
+                                <span className="text-muted-foreground text-[8px] uppercase tracking-wider">{label}</span>
+                                <span className="font-semibold text-foreground text-[10px] text-right">{value}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* License Plate & Vehicle Specs */}
+                          <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                            <div className="bg-card border border-border/40 p-2 rounded">
+                              <span className="text-muted-foreground block text-[8px] uppercase">LICENSE PLATE</span>
+                              <span className="text-tactical-red font-bold tracking-widest">{detail?.plate}</span>
+                            </div>
+                            <div className="bg-card border border-border/40 p-2 rounded">
+                              <span className="text-muted-foreground block text-[8px] uppercase">VEHICLE</span>
+                              <span className="text-foreground font-bold truncate block">{detail?.vehicleDesc}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Column: Images */}
+                        <div className="flex flex-col gap-2 self-start">
+                          {/* Vehicle Image */}
+                          <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black group shadow-md">
+                            <img 
+                              src="/flagged_vehicle.png" 
+                              alt="Flagged Stolen Vehicle" 
+                              className="w-full h-full object-cover opacity-90" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                            <div className="absolute top-1.5 right-1.5 px-1 py-0.5 rounded bg-tactical-red text-white text-[5px] font-bold font-mono tracking-widest animate-pulse">
+                              FLAGGED
+                            </div>
+                          </div>
+                          {/* Plate Image */}
+                          <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black group shadow-md">
+                            <img 
+                              src="/flagged_plate.png" 
+                              alt="Flagged Vehicle Plate" 
+                              className="w-full h-full object-cover opacity-90" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                            <div className="absolute top-1.5 right-1.5 px-1 py-0.5 rounded bg-tactical-green text-white text-[5px] font-bold font-mono tracking-widest">
+                              PLATE
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="absolute top-2 right-2 z-10 p-1 rounded bg-black/60 border border-white/10 text-white/70">
-                        <Maximize2 className="h-3 w-3" />
-                      </div>
-                      <div className="absolute bottom-2 left-2 right-2 z-10 p-2 rounded bg-black/75 border border-tactical-red/30 text-[9px] font-mono text-white flex flex-col gap-0.5">
-                        {(activeIncident.kind === "stolen_vehicle" || activeIncident.kind === "blacklisted_vehicle") && (
-                          <>
+
+                      {/* FIR Match Info card */}
+                      {detail?.firImage && (
+                        <div
+                          onClick={() => setShowFirDetail(true)}
+                          className="flex gap-3 p-2.5 rounded-lg bg-tactical-red/5 border border-tactical-red/25 cursor-pointer hover:border-tactical-red/50 transition-colors group"
+                        >
+                          <div className="relative h-16 w-12 rounded overflow-hidden border border-border shrink-0 bg-black">
+                            <img src={detail.firImage} alt="Scanned FIR" className="h-full w-full object-cover opacity-90" />
+                            <div className="absolute inset-x-0 top-0 h-0.5 bg-tactical-green/80 animate-pulse" />
+                          </div>
+                          <div className="flex-1 min-w-0 font-mono">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <FileText className="h-3.5 w-3.5 text-tactical-red" />
+                              <span className="text-[10px] font-bold text-tactical-red tracking-wider">FIR MATCH — SCANNED DOCUMENT</span>
+                            </div>
+                            <p className="text-[9px] text-muted-foreground leading-normal font-mono">
+                              FIR No: <span className="text-foreground font-bold">{detail.firNo}</span> · PS Airport, Rawalpindi
+                              <br />Plate: <span className="text-tactical-red font-bold">{detail.plate}</span>
+                            </p>
+                            <span className="text-[8px] text-tactical-cyan tracking-widest uppercase group-hover:underline mt-1 block">
+                              Click to view scanned FIR →
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Live camera feed */}
+                      {activeIncident.videoSrc && (
+                        <div
+                          onClick={() => setShowFeedDetail(true)}
+                          className="relative w-full aspect-video rounded-lg overflow-hidden border border-tactical-red/30 bg-black group shadow-[0_0_15px_rgba(239,68,68,0.1)] cursor-pointer hover:border-tactical-red/60 transition-colors"
+                        >
+                          <video
+                            src={activeIncident.videoSrc}
+                            autoPlay loop muted playsInline
+                            className="w-full h-full object-cover opacity-90 group-hover:scale-102 transition-transform duration-700"
+                          />
+                          <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(rgba(0,255,157,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
+                          <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[8px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-tactical-red blink" />
+                            {activeIncident.camera}
+                          </div>
+                          <div className="absolute top-2 right-2 z-10 p-1 rounded bg-black/60 border border-white/10 text-white/70">
+                            <Maximize2 className="h-3 w-3" />
+                          </div>
+                          <div className="absolute bottom-2 left-2 right-2 z-10 p-2 rounded bg-black/75 border border-tactical-red/30 text-[9px] font-mono text-white flex flex-col gap-0.5">
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">DETECTED:</span>
                               <span className="text-tactical-red font-bold tracking-widest">
-                                {detail?.plate} ({activeIncident.kind === "stolen_vehicle" ? "STOLEN — FIR MATCH" : "BLACKLISTED"})
+                                {detail?.plate} (STOLEN)
                               </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">CONFIDENCE:</span>
                               <span className="text-tactical-red font-bold">{detail?.confidence}% MATCH</span>
                             </div>
-                          </>
-                        )}
-                        {activeIncident.kind === "flagged_person" && (
-                          <>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">FACE MATCH:</span>
-                              <span className="text-tactical-red font-bold tracking-wider">{detail?.personName} ({detail?.personId})</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">CONFIDENCE:</span>
-                              <span className="text-tactical-red font-bold">{detail?.confidence}% MATCH</span>
-                            </div>
-                          </>
-                        )}
-                        {activeIncident.kind === "queue_congestion" && (
-                          <>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">PAX COUNT:</span>
-                              <span className="text-tactical-amber font-bold tracking-wider">
-                                {detail?.peopleCount} / {detail?.threshold} THRESHOLD
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">EST. WAIT:</span>
-                              <span className="text-tactical-amber font-bold">{detail?.waitTime}</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Stolen vehicle — scanned FIR */}
-                  {activeIncident.kind === "stolen_vehicle" && detail?.firImage && (
-                    <div
-                      onClick={() => setShowFirDetail(true)}
-                      className="flex gap-3 p-2.5 rounded-lg bg-tactical-red/5 border border-tactical-red/25 cursor-pointer hover:border-tactical-red/50 transition-colors group"
-                    >
-                      <div className="relative h-20 w-14 rounded overflow-hidden border border-border shrink-0 bg-black">
-                        <img src={detail.firImage} alt="Scanned FIR" className="h-full w-full object-cover opacity-90" />
-                        <div className="absolute inset-x-0 top-0 h-0.5 bg-tactical-green/80 animate-pulse" />
-                      </div>
-                      <div className="flex-1 min-w-0 font-mono">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <FileText className="h-3 w-3 text-tactical-red" />
-                          <span className="text-[10px] font-bold text-tactical-red tracking-wider">FIR MATCH — SCANNED DOCUMENT</span>
+                          </div>
                         </div>
-                        <p className="text-[9px] text-muted-foreground leading-relaxed">
-                          FIR No. <span className="text-foreground font-bold">{detail.firNo}</span> · {detail.policeStation}
-                          <br />Dated {detail.firDate} · Plate <span className="text-tactical-red font-bold">{detail.plate}</span>
-                        </p>
-                        <span className="text-[8px] text-tactical-cyan tracking-widest uppercase group-hover:underline">
-                          Click to view scanned FIR →
+                      )}
+
+                      {/* Description */}
+                      <p className="font-mono text-[11px] text-muted-foreground leading-relaxed">
+                        {activeIncident.description}
+                      </p>
+
+                      {/* Details Table */}
+                      <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                        <div className="bg-accent/30 rounded px-2 py-1.5">
+                          <span className="text-muted-foreground block">CAMERA</span>
+                          <span className="text-foreground">{activeIncident.camera}</span>
+                        </div>
+                        <div className="bg-accent/30 rounded px-2 py-1.5">
+                          <span className="text-muted-foreground block">SITE</span>
+                          <span className="text-foreground">{activeIncident.site}</span>
+                        </div>
+                        <div className="bg-accent/30 rounded px-2 py-1.5">
+                          <span className="text-muted-foreground block">GPS LAT</span>
+                          <span className="text-tactical-cyan">{activeIncident.lat.toFixed(4)}°</span>
+                        </div>
+                        <div className="bg-accent/30 rounded px-2 py-1.5">
+                          <span className="text-muted-foreground block">GPS LNG</span>
+                          <span className="text-tactical-cyan">{activeIncident.lng.toFixed(4)}°</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className={`flex items-center gap-1.5 font-mono text-[10px] ${zoneMeta[activeIncident.zone].color}`}>
+                          <span className={`h-2 w-2 rounded-full ${zoneMeta[activeIncident.zone].dot}`} />
+                          {activeIncident.zone} — {zoneMeta[activeIncident.zone].label}
                         </span>
+                        <span className="font-mono text-[10px] text-muted-foreground">{activeIncident.reported}</span>
                       </div>
-                    </div>
-                  )}
+                      <p className="font-mono text-[11px] text-muted-foreground leading-relaxed">
+                        {activeIncident.description}
+                      </p>
 
-                  {/* Blacklisted vehicle — watchlist profile */}
-                  {activeIncident.kind === "blacklisted_vehicle" && detail && (
-                    <div className="flex gap-3 p-3 rounded-lg bg-tactical-red/5 border border-tactical-red/25">
-                      <div className="h-12 w-12 rounded bg-secondary border border-border flex items-center justify-center shrink-0">
-                        <User className="h-7 w-7 text-muted-foreground" />
-                      </div>
-                      <div className="text-[10px] font-mono space-y-0.5 min-w-0">
-                        <span className="block font-bold text-tactical-red tracking-wider">OCCUPANT WATCHLIST PROFILE</span>
-                        <p className="text-foreground"><span className="text-muted-foreground">Name/Alias:</span> {detail.occupantName} ({detail.occupantId})</p>
-                        <p className="text-foreground"><span className="text-muted-foreground">Threat:</span> <span className="text-tactical-red font-bold">{detail.threatLevel}</span></p>
-                        <p className="text-muted-foreground">{detail.watchlistRef}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Flagged person — FIA watchlist profile */}
-                  {activeIncident.kind === "flagged_person" && detail && (
-                    <div className="rounded-lg bg-tactical-red/5 border border-tactical-red/25 overflow-hidden">
-                      <div className="flex items-center gap-1.5 px-3 py-2 border-b border-tactical-red/20 bg-tactical-red/10">
-                        <BadgeAlert className="h-3 w-3 text-tactical-red" />
-                        <span className="font-mono text-[9px] font-bold text-tactical-red tracking-wider uppercase">FIA Watchlist Profile</span>
-                        <span className="ml-auto font-mono text-[8px] text-tactical-red font-bold">{detail.confidence}% MATCH</span>
-                      </div>
-                      <div className="p-3 flex gap-3">
-                        <div className="h-12 w-12 rounded bg-secondary border border-border flex items-center justify-center shrink-0">
-                          <User className="h-7 w-7 text-muted-foreground" />
-                        </div>
-                        <div className="text-[10px] font-mono space-y-0.5 min-w-0">
-                          <p className="text-foreground font-bold">{detail.personName} <span className="text-muted-foreground font-normal">({detail.personId})</span></p>
-                          <p className="text-tactical-red font-bold">{detail.flagReason}</p>
-                          <p className="text-foreground"><span className="text-muted-foreground">Passport:</span> {detail.passport} · {detail.nationality}</p>
-                          <p className="text-foreground"><span className="text-muted-foreground">Flight:</span> {detail.flight}</p>
-                          <p className="text-foreground"><span className="text-muted-foreground">Threat:</span> <span className="text-tactical-amber font-bold">{detail.threatLevel}</span></p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Queue congestion — metrics */}
-                  {activeIncident.kind === "queue_congestion" && detail && (
-                    <div className="rounded-lg bg-tactical-amber/5 border border-tactical-amber/25 p-3 space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <UsersRound className="h-3 w-3 text-tactical-amber" />
-                        <span className="font-mono text-[9px] font-bold text-tactical-amber tracking-wider uppercase">{detail.counter}</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                      {/* Live camera feed */}
+                      {activeIncident.videoSrc && (
                         <div
-                          className="h-full rounded-full bg-tactical-amber transition-all"
-                          style={{ width: `${Math.min(100, ((detail.peopleCount || 0) / ((detail.threshold || 1) * 1.8)) * 100)}%` }}
-                        />
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-[10px] font-mono">
-                        <div className="bg-accent/30 rounded px-2 py-1.5">
-                          <span className="text-muted-foreground block text-[8px] uppercase">In Queue</span>
-                          <span className="text-tactical-amber font-bold">{detail.peopleCount} pax</span>
+                          onClick={() => setShowFeedDetail(true)}
+                          className="relative w-full aspect-video rounded-lg overflow-hidden border border-tactical-red/30 bg-black group shadow-[0_0_15px_rgba(239,68,68,0.1)] cursor-pointer hover:border-tactical-red/60 transition-colors"
+                        >
+                          <video
+                            src={activeIncident.videoSrc}
+                            autoPlay loop muted playsInline
+                            className="w-full h-full object-cover opacity-90 group-hover:scale-102 transition-transform duration-700"
+                          />
+                          <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(rgba(0,255,157,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
+                          <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[8px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-tactical-red blink" />
+                            {activeIncident.camera}
+                          </div>
+                          <div className="absolute top-2 right-2 z-10 p-1 rounded bg-black/60 border border-white/10 text-white/70">
+                            <Maximize2 className="h-3 w-3" />
+                          </div>
+                          <div className="absolute bottom-2 left-2 right-2 z-10 p-2 rounded bg-black/75 border border-tactical-red/30 text-[9px] font-mono text-white flex flex-col gap-0.5">
+                            {activeIncident.kind === "blacklisted_vehicle" && (
+                              <>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">DETECTED:</span>
+                                  <span className="text-tactical-red font-bold tracking-widest">
+                                    {detail?.plate} (BLACKLISTED)
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">CONFIDENCE:</span>
+                                  <span className="text-tactical-red font-bold">{detail?.confidence}% MATCH</span>
+                                </div>
+                              </>
+                            )}
+                            {activeIncident.kind === "flagged_person" && (
+                              <>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">FACE MATCH:</span>
+                                  <span className="text-tactical-red font-bold tracking-wider">{detail?.personName} ({detail?.personId})</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">CONFIDENCE:</span>
+                                  <span className="text-tactical-red font-bold">{detail?.confidence}% MATCH</span>
+                                </div>
+                              </>
+                            )}
+                            {activeIncident.kind === "queue_congestion" && (
+                              <>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">PAX COUNT:</span>
+                                  <span className="text-tactical-amber font-bold tracking-wider">
+                                    {detail?.peopleCount} / {detail?.threshold} THRESHOLD
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">EST. WAIT:</span>
+                                  <span className="text-tactical-amber font-bold">{detail?.waitTime}</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="bg-accent/30 rounded px-2 py-1.5">
-                          <span className="text-muted-foreground block text-[8px] uppercase">Threshold</span>
-                          <span className="text-foreground font-bold">{detail.threshold} pax</span>
-                        </div>
-                        <div className="bg-accent/30 rounded px-2 py-1.5">
-                          <span className="text-muted-foreground block text-[8px] uppercase">Est. Wait</span>
-                          <span className="text-foreground font-bold">{detail.waitTime}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                      )}
 
-                  <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
-                    <div className="bg-accent/30 rounded px-2 py-1.5">
-                      <span className="text-muted-foreground block">CAMERA</span>
-                      <span className="text-foreground">{activeIncident.camera}</span>
-                    </div>
-                    <div className="bg-accent/30 rounded px-2 py-1.5">
-                      <span className="text-muted-foreground block">SITE</span>
-                      <span className="text-foreground">{activeIncident.site}</span>
-                    </div>
-                    <div className="bg-accent/30 rounded px-2 py-1.5">
-                      <span className="text-muted-foreground block">GPS LAT</span>
-                      <span className="text-tactical-cyan">{activeIncident.lat.toFixed(4)}°</span>
-                    </div>
-                    <div className="bg-accent/30 rounded px-2 py-1.5">
-                      <span className="text-muted-foreground block">GPS LNG</span>
-                      <span className="text-tactical-cyan">{activeIncident.lng.toFixed(4)}°</span>
-                    </div>
-                  </div>
+                      {/* Matches details section */}
+                      {detail && (
+                        <div className="space-y-3">
+                          {/* Blacklisted vehicle — watchlist profile */}
+                          {activeIncident.kind === "blacklisted_vehicle" && (
+                            <div className="flex gap-3 p-3 rounded-lg bg-tactical-red/5 border border-tactical-red/25">
+                              <div className="h-12 w-12 rounded bg-secondary border border-border flex items-center justify-center shrink-0">
+                                <User className="h-7 w-7 text-muted-foreground" />
+                              </div>
+                              <div className="text-[10px] font-mono space-y-0.5 min-w-0">
+                                <span className="block font-bold text-tactical-red tracking-wider">OCCUPANT WATCHLIST PROFILE</span>
+                                <p className="text-foreground"><span className="text-muted-foreground">Name/Alias:</span> {detail.occupantName} ({detail.occupantId})</p>
+                                <p className="text-foreground"><span className="text-muted-foreground">Threat:</span> <span className="text-tactical-red font-bold">{detail.threatLevel}</span></p>
+                                <p className="text-muted-foreground">{detail.watchlistRef}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Flagged person — FIA watchlist profile */}
+                          {activeIncident.kind === "flagged_person" && (
+                            <div className="rounded-lg bg-tactical-red/5 border border-tactical-red/25 overflow-hidden">
+                              <div className="flex items-center gap-1.5 px-3 py-2 border-b border-tactical-red/20 bg-tactical-red/10">
+                                <BadgeAlert className="h-3 w-3 text-tactical-red" />
+                                <span className="font-mono text-[9px] font-bold text-tactical-red tracking-wider uppercase">FIA Watchlist Profile</span>
+                                <span className="ml-auto font-mono text-[8px] text-tactical-red font-bold">{detail.confidence}% MATCH</span>
+                              </div>
+                              <div className="p-3 flex gap-3">
+                                <div className="h-12 w-12 rounded bg-secondary border border-border flex items-center justify-center shrink-0">
+                                  <User className="h-7 w-7 text-muted-foreground" />
+                                </div>
+                                <div className="text-[10px] font-mono space-y-0.5 min-w-0">
+                                  <p className="text-foreground font-bold">{detail.personName} <span className="text-muted-foreground font-normal">({detail.personId})</span></p>
+                                  <p className="text-tactical-red font-bold">{detail.flagReason}</p>
+                                  <p className="text-foreground"><span className="text-muted-foreground">Passport:</span> {detail.passport} · {detail.nationality}</p>
+                                  <p className="text-foreground"><span className="text-muted-foreground">Flight:</span> {detail.flight}</p>
+                                  <p className="text-foreground"><span className="text-muted-foreground">Threat:</span> <span className="text-tactical-amber font-bold">{detail.threatLevel}</span></p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Queue congestion — metrics */}
+                          {activeIncident.kind === "queue_congestion" && (
+                            <div className="rounded-lg bg-tactical-amber/5 border border-tactical-amber/25 p-3 space-y-2">
+                              <div className="flex items-center gap-1.5">
+                                <UsersRound className="h-3 w-3 text-tactical-amber" />
+                                <span className="font-mono text-[9px] font-bold text-tactical-amber tracking-wider uppercase">{detail.counter}</span>
+                              </div>
+                              <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                                <div
+                                  className="h-full bg-tactical-amber transition-all duration-500"
+                                  style={{ width: `${((detail.peopleCount || 0) / (detail.threshold || 1)) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                        <div className="bg-accent/30 rounded px-2 py-1.5">
+                          <span className="text-muted-foreground block">CAMERA</span>
+                          <span className="text-foreground">{activeIncident.camera}</span>
+                        </div>
+                        <div className="bg-accent/30 rounded px-2 py-1.5">
+                          <span className="text-muted-foreground block">SITE</span>
+                          <span className="text-foreground">{activeIncident.site}</span>
+                        </div>
+                        <div className="bg-accent/30 rounded px-2 py-1.5">
+                          <span className="text-muted-foreground block">GPS LAT</span>
+                          <span className="text-tactical-cyan">{activeIncident.lat.toFixed(4)}°</span>
+                        </div>
+                        <div className="bg-accent/30 rounded px-2 py-1.5">
+                          <span className="text-muted-foreground block">GPS LNG</span>
+                          <span className="text-tactical-cyan">{activeIncident.lng.toFixed(4)}°</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 

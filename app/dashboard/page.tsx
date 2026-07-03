@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useASF, type Zone, type Incident } from "@/components/asf-context";
+import { useASF, type Zone, type Incident, type ASFGroup } from "@/components/asf-context";
 import {
   Crosshair,
   ShieldCheck,
@@ -291,6 +291,7 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
   const sc = zoneAlertStatusConfig[incident.status];
   const StatusIcon = sc.icon;
   const [showFirDetail, setShowFirDetail] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -322,163 +323,363 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
 
         {/* Scrollable body */}
         <div className="overflow-y-auto flex-1 p-6 space-y-5 font-mono text-xs">
-          {/* Status and Zone */}
-          <div className="flex flex-wrap gap-2.5">
-            <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md border ${sc.bg} ${sc.color} ${sc.border} uppercase tracking-wider`}>
-              <StatusIcon className="h-3 w-3" />
-              {sc.label}
-            </span>
-            <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md border bg-secondary/40 border-border uppercase tracking-wider ${zoneMeta[incident.zone].color}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${zoneMeta[incident.zone].dot}`} />
-              {incident.zone}
-            </span>
-          </div>
+          {incident.kind === "stolen_vehicle" || incident.id === "EVT-205" ? (
+            <>
+              {/* Top Row: Split 50/50 */}
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_150px] gap-5">
+                {/* Left Side: Basic Info */}
+                <div className="space-y-4">
+                  {/* Status and Zone */}
+                  <div className="flex flex-wrap gap-2.5">
+                    <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md border ${sc.bg} ${sc.color} ${sc.border} uppercase tracking-wider`}>
+                      <StatusIcon className="h-3 w-3" />
+                      {sc.label}
+                    </span>
+                    <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md border bg-secondary/40 border-border uppercase tracking-wider ${zoneMeta[incident.zone].color}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${zoneMeta[incident.zone].dot}`} />
+                      {incident.zone}
+                    </span>
+                  </div>
 
-          {/* Details Table */}
-          <div className="space-y-0 rounded-xl border border-border/40 overflow-hidden bg-secondary/20">
-            {[
-              { label: "Site Location", value: incident.site },
-              { label: "Reporting Cam", value: incident.camera },
-              { label: "Report Time", value: incident.reported },
-              { label: "Required Capability", value: incident.requiredCap.toUpperCase() },
-            ].map(({ label, value }, i, arr) => (
-              <div key={label} className={`flex items-center justify-between px-5 py-3 ${i !== arr.length - 1 ? "border-b border-border/20" : ""}`}>
-                <span className="text-muted-foreground text-[10px] uppercase tracking-wider">{label}</span>
-                <span className="font-semibold text-foreground text-right">{value}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Matches Payload Details */}
-          {incident.detail && (
-            <div className="rounded-xl border border-border/40 bg-secondary/20 p-4 space-y-3.5">
-              <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">MATCH RETRIEVAL SUMMARY</span>
-              <div className="grid grid-cols-2 gap-4">
-                {incident.detail.plate && (
-                  <div className="bg-card border border-border/40 p-2.5 rounded">
-                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">LICENSE PLATE</span>
-                    <span className="font-bold text-tactical-red text-sm tracking-widest">{incident.detail.plate}</span>
-                  </div>
-                )}
-                {incident.detail.vehicleDesc && (
-                  <div className="bg-card border border-border/40 p-2.5 rounded">
-                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">VEHICLE</span>
-                    <span className="font-bold text-foreground">{incident.detail.vehicleDesc}</span>
-                  </div>
-                )}
-                {incident.detail.personName && (
-                  <div className="bg-card border border-border/40 p-2.5 rounded">
-                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">SUSPECT NAME</span>
-                    <span className="font-bold text-foreground">{incident.detail.personName}</span>
-                  </div>
-                )}
-                {incident.detail.personId && (
-                  <div className="bg-card border border-border/40 p-2.5 rounded">
-                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">SUSPECT ID</span>
-                    <span className="font-bold text-tactical-amber">{incident.detail.personId}</span>
-                  </div>
-                )}
-                {incident.detail.passport && (
-                  <div className="bg-card border border-border/40 p-2.5 rounded">
-                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">PASSPORT</span>
-                    <span className="font-bold text-foreground">{incident.detail.passport} ({incident.detail.nationality})</span>
-                  </div>
-                )}
-                {incident.detail.flight && (
-                  <div className="bg-card border border-border/40 p-2.5 rounded">
-                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FLIGHT</span>
-                    <span className="font-bold text-tactical-cyan">{incident.detail.flight}</span>
-                  </div>
-                )}
-                {incident.detail.flagReason && (
-                  <div className="bg-card border border-border/40 p-2.5 rounded col-span-2">
-                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FLAG REASON</span>
-                    <span className="text-foreground/90">{incident.detail.flagReason}</span>
-                  </div>
-                )}
-                {incident.kind === "stolen_vehicle" && incident.detail.firImage ? (
-                  <div
-                    onClick={() => setShowFirDetail(true)}
-                    className="flex gap-3 p-3 rounded-lg bg-tactical-red/5 border border-tactical-red/25 cursor-pointer hover:border-tactical-red/50 transition-colors group col-span-2"
-                  >
-                    <div className="relative h-20 w-14 rounded overflow-hidden border border-border shrink-0 bg-black">
-                      <img src={incident.detail.firImage} alt="Scanned FIR" className="h-full w-full object-cover opacity-90" />
-                      <div className="absolute inset-x-0 top-0 h-0.5 bg-tactical-green/80 animate-pulse" />
-                    </div>
-                    <div className="flex-1 min-w-0 font-mono">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <FileText className="h-3.5 w-3.5 text-tactical-red" />
-                        <span className="text-[10px] font-bold text-tactical-red tracking-wider">FIR MATCH — SCANNED DOCUMENT</span>
+                  {/* Details Table */}
+                  <div className="space-y-0 rounded-xl border border-border/40 overflow-hidden bg-secondary/20">
+                    {[
+                      { label: "Site Location", value: incident.site },
+                      { label: "Reporting Cam", value: incident.camera },
+                      { label: "Report Time", value: incident.reported },
+                      { label: "Required Capability", value: incident.requiredCap.toUpperCase() },
+                    ].map(({ label, value }, i, arr) => (
+                      <div key={label} className={`flex items-center justify-between px-4 py-2.5 ${i !== arr.length - 1 ? "border-b border-border/20" : ""}`}>
+                        <span className="text-muted-foreground text-[10px] uppercase tracking-wider">{label}</span>
+                        <span className="font-semibold text-foreground text-right">{value}</span>
                       </div>
-                      <p className="text-[9px] text-muted-foreground leading-relaxed">
-                        FIR No. <span className="text-foreground font-bold">{incident.detail.firNo}</span> · {incident.detail.policeStation}
-                        <br />Dated {incident.detail.firDate} · Plate <span className="text-tactical-red font-bold">{incident.detail.plate}</span>
-                      </p>
-                      <span className="text-[8px] text-tactical-cyan tracking-widest uppercase group-hover:underline">
-                        Click to view scanned FIR →
+                    ))}
+                  </div>
+
+                  {/* Suspect Meta or Plate/Vehicle specs */}
+                  {incident.kind === "flagged_person" ? (
+                    <div className="grid grid-cols-2 gap-3 font-mono">
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">SUSPECT NAME</span>
+                        <span className="font-bold text-foreground text-xs">{incident.detail?.personName}</span>
+                      </div>
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">CNIC ID NUMBER</span>
+                        <span className="font-bold text-tactical-red text-xs tracking-widest">61101-9876543-1</span>
+                      </div>
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">NATIONALITY</span>
+                        <span className="font-bold text-foreground text-xs">{incident.detail?.nationality}</span>
+                      </div>
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">PASSPORT</span>
+                        <span className="font-bold text-tactical-cyan text-xs">{incident.detail?.passport}</span>
+                      </div>
+                      <div className="bg-card border border-border/40 p-2.5 rounded col-span-2">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">MATCH DETAILS & THREAT</span>
+                        <div className="flex justify-between items-center mt-0.5">
+                          <span className="text-tactical-red font-bold text-[10px]">{incident.detail?.threatLevel} THREAT</span>
+                          <span className="text-tactical-amber font-bold text-[10px]">{incident.detail?.confidence}% MATCH</span>
+                        </div>
+                        <span className="text-muted-foreground text-[10px] block mt-1">{incident.detail?.flagReason}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    /* stolen vehicle specs */
+                    incident.detail && (
+                      <div className="grid grid-cols-2 gap-3">
+                        {incident.detail.plate && (
+                          <div className="bg-card border border-border/40 p-2.5 rounded">
+                            <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">LICENSE PLATE</span>
+                            <span className="font-bold text-tactical-red text-sm tracking-widest">{incident.detail.plate}</span>
+                          </div>
+                        )}
+                        {incident.detail.vehicleDesc && (
+                          <div className="bg-card border border-border/40 p-2.5 rounded">
+                            <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">VEHICLE</span>
+                            <span className="font-bold text-foreground">{incident.detail.vehicleDesc}</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  )}
+                </div>
+
+                {/* Right Side: Images */}
+                <div className="flex flex-col gap-3 self-start">
+                  {incident.kind === "flagged_person" ? (
+                    <>
+                      {/* Face Image */}
+                      <div 
+                        onClick={() => setZoomedImage("/suspect_face.jpg")}
+                        className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black group shadow-md cursor-zoom-in hover:border-tactical-red/60 transition-all duration-300"
+                      >
+                        <img 
+                          src="/suspect_face.jpg" 
+                          alt="Face Capture" 
+                          className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                        <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-tactical-red text-white text-[7px] font-bold font-mono tracking-widest animate-pulse">
+                          CCTV FACE
+                        </div>
+                      </div>
+                      {/* CNIC Image */}
+                      <div 
+                        onClick={() => setZoomedImage("/suspect_cnic.jpg")}
+                        className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black group shadow-md cursor-zoom-in hover:border-tactical-red/60 transition-all duration-300"
+                      >
+                        <img 
+                          src="/suspect_cnic.jpg" 
+                          alt="CNIC Database" 
+                          className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                        <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-tactical-green text-white text-[7px] font-bold font-mono tracking-widest">
+                          CNIC COPY
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Vehicle Image */}
+                      <div 
+                        onClick={() => setZoomedImage("/flagged_vehicle.png")}
+                        className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black group shadow-md cursor-zoom-in hover:border-tactical-red/60 transition-all duration-300"
+                      >
+                        <img 
+                          src="/flagged_vehicle.png" 
+                          alt="Flagged Stolen Vehicle" 
+                          className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                        <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-tactical-red text-white text-[7px] font-bold font-mono tracking-widest animate-pulse">
+                          FLAGGED VEHICLE
+                        </div>
+                      </div>
+                      {/* Plate close-up image */}
+                      <div 
+                        onClick={() => setZoomedImage("/flagged_plate.png")}
+                        className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black group shadow-md cursor-zoom-in hover:border-tactical-red/60 transition-all duration-300"
+                      >
+                        <img 
+                          src="/flagged_plate.png" 
+                          alt="Flagged Vehicle Plate" 
+                          className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                        <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-tactical-green text-white text-[7px] font-bold font-mono tracking-widest">
+                          ANPR CAPTURE
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* FIR/Warrant Info Section */}
+              {incident.detail?.firImage && (
+                <div
+                  onClick={() => setShowFirDetail(true)}
+                  className="flex gap-3 p-3 rounded-lg bg-tactical-red/5 border border-tactical-red/25 cursor-pointer hover:border-tactical-red/50 transition-colors group"
+                >
+                  <div className="relative h-16 w-12 rounded overflow-hidden border border-border shrink-0 bg-black">
+                    <img src={incident.detail.firImage} alt="Scanned Document" className="h-full w-full object-cover opacity-90" />
+                    <div className="absolute inset-x-0 top-0 h-0.5 bg-tactical-green/80 animate-pulse" />
+                  </div>
+                  <div className="flex-1 min-w-0 font-mono">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <FileText className="h-3.5 w-3.5 text-tactical-red" />
+                      <span className="text-[10px] font-bold text-tactical-red tracking-wider">
+                        {incident.kind === "flagged_person" ? "ARREST WARRANT — SCANNED DOCUMENT" : "FIR MATCH — SCANNED DOCUMENT"}
                       </span>
                     </div>
+                    <p className="text-[9px] text-muted-foreground leading-relaxed">
+                      {incident.kind === "flagged_person" ? (
+                        <>
+                          Warrant No. <span className="text-foreground font-bold">{incident.detail.firNo}</span> · Issued by {incident.detail.policeStation}
+                          <br />Date Issued {incident.detail.firDate} · Suspect <span className="text-tactical-red font-bold">{incident.detail.personName}</span>
+                        </>
+                      ) : (
+                        <>
+                          FIR No. <span className="text-foreground font-bold">{incident.detail.firNo}</span> · {incident.detail.policeStation}
+                          <br />Dated {incident.detail.firDate} · Plate <span className="text-tactical-red font-bold">{incident.detail.plate}</span>
+                        </>
+                      )}
+                    </p>
+                    <span className="text-[8px] text-tactical-cyan tracking-widest uppercase group-hover:underline">
+                      Click to view scanned {incident.kind === "flagged_person" ? "Warrant" : "FIR"} →
+                    </span>
                   </div>
-                ) : (
-                  <>
-                    {incident.detail.firNo && (
+                </div>
+              )}
+
+              {/* Live Video Feed Section */}
+              {incident.videoSrc && (
+                <div className="space-y-2">
+                  <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">RETRIEVED VIDEO CAPTURE</span>
+                  <div className="rounded-xl overflow-hidden border border-border/40 relative bg-zinc-900" style={{ aspectRatio: "16/9" }}>
+                    <video
+                      src={incident.videoSrc}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[8px] font-bold tracking-widest z-10">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      FEED RECORD
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-black/60 border border-white/10 px-2 py-1 rounded backdrop-blur z-10 text-[9px]">
+                      {incident.camera}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              <div className="rounded-xl border border-border/40 bg-secondary/40 p-4 space-y-1.5">
+                <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">INCIDENT OVERVIEW</span>
+                <p className="text-foreground/90 leading-relaxed">{incident.description}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Status and Zone */}
+              <div className="flex flex-wrap gap-2.5">
+                <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md border ${sc.bg} ${sc.color} ${sc.border} uppercase tracking-wider`}>
+                  <StatusIcon className="h-3 w-3" />
+                  {sc.label}
+                </span>
+                <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md border bg-secondary/40 border-border uppercase tracking-wider ${zoneMeta[incident.zone].color}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${zoneMeta[incident.zone].dot}`} />
+                  {incident.zone}
+                </span>
+              </div>
+
+              {/* Details Table */}
+              <div className="space-y-0 rounded-xl border border-border/40 overflow-hidden bg-secondary/20">
+                {[
+                  { label: "Site Location", value: incident.site },
+                  { label: "Reporting Cam", value: incident.camera },
+                  { label: "Report Time", value: incident.reported },
+                  { label: "Required Capability", value: incident.requiredCap.toUpperCase() },
+                ].map(({ label, value }, i, arr) => (
+                  <div key={label} className={`flex items-center justify-between px-5 py-3 ${i !== arr.length - 1 ? "border-b border-border/20" : ""}`}>
+                    <span className="text-muted-foreground text-[10px] uppercase tracking-wider">{label}</span>
+                    <span className="font-semibold text-foreground text-right">{value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Matches Payload Details */}
+              {incident.detail && (
+                <div className="rounded-xl border border-border/40 bg-secondary/20 p-4 space-y-3.5">
+                  <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">MATCH RETRIEVAL SUMMARY</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    {incident.detail.plate && (
                       <div className="bg-card border border-border/40 p-2.5 rounded">
-                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FIR NO</span>
-                        <span className="font-bold text-foreground">{incident.detail.firNo}</span>
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">LICENSE PLATE</span>
+                        <span className="font-bold text-tactical-red text-sm tracking-widest">{incident.detail.plate}</span>
                       </div>
                     )}
-                    {incident.detail.complainant && (
+                    {incident.detail.vehicleDesc && (
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">VEHICLE</span>
+                        <span className="font-bold text-foreground">{incident.detail.vehicleDesc}</span>
+                      </div>
+                    )}
+                    {incident.detail.personName && (
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">SUSPECT NAME</span>
+                        <span className="font-bold text-foreground">{incident.detail.personName}</span>
+                      </div>
+                    )}
+                    {incident.detail.personId && (
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">SUSPECT ID</span>
+                        <span className="font-bold text-tactical-amber">{incident.detail.personId}</span>
+                      </div>
+                    )}
+                    {incident.detail.passport && (
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">PASSPORT</span>
+                        <span className="font-bold text-foreground">{incident.detail.passport} ({incident.detail.nationality})</span>
+                      </div>
+                    )}
+                    {incident.detail.flight && (
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FLIGHT</span>
+                        <span className="font-bold text-tactical-cyan">{incident.detail.flight}</span>
+                      </div>
+                    )}
+                    {incident.detail.flagReason && (
                       <div className="bg-card border border-border/40 p-2.5 rounded col-span-2">
-                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">COMPLAINANT INFO</span>
-                        <span className="text-foreground">{incident.detail.complainant} (Contact: {incident.detail.contact})</span>
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FLAG REASON</span>
+                        <span className="text-foreground/90">{incident.detail.flagReason}</span>
                       </div>
                     )}
-                  </>
-                )}
-                {incident.detail.peopleCount && (
-                  <div className="bg-card border border-border/40 p-2.5 rounded">
-                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">PEOPLE COUNT</span>
-                    <span className="font-bold text-tactical-amber text-sm">{incident.detail.peopleCount} / Limit {incident.detail.threshold}</span>
+                    <>
+                      {incident.detail.firNo && (
+                        <div className="bg-card border border-border/40 p-2.5 rounded">
+                          <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FIR NO</span>
+                          <span className="font-bold text-foreground">{incident.detail.firNo}</span>
+                        </div>
+                      )}
+                      {incident.detail.complainant && (
+                        <div className="bg-card border border-border/40 p-2.5 rounded col-span-2">
+                          <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">COMPLAINANT INFO</span>
+                          <span className="text-foreground">{incident.detail.complainant} (Contact: {incident.detail.contact})</span>
+                        </div>
+                      )}
+                    </>
+                    {incident.detail.peopleCount && (
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">PEOPLE COUNT</span>
+                        <span className="font-bold text-tactical-amber text-sm">{incident.detail.peopleCount} / Limit {incident.detail.threshold}</span>
+                      </div>
+                    )}
+                    {incident.detail.waitTime && (
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">WAIT TIME</span>
+                        <span className="font-bold text-foreground">{incident.detail.waitTime}</span>
+                      </div>
+                    )}
                   </div>
-                )}
-                {incident.detail.waitTime && (
-                  <div className="bg-card border border-border/40 p-2.5 rounded">
-                    <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">WAIT TIME</span>
-                    <span className="font-bold text-foreground">{incident.detail.waitTime}</span>
+                </div>
+              )}
+
+              {/* Description */}
+              <div className="rounded-xl border border-border/40 bg-secondary/40 p-4 space-y-1.5">
+                <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">INCIDENT OVERVIEW</span>
+                <p className="text-foreground/90 leading-relaxed">{incident.description}</p>
+              </div>
+
+              {/* Live Video Stream */}
+              {incident.videoSrc && (
+                <div className="space-y-2">
+                  <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">RETRIEVED VIDEO CAPTURE</span>
+                  <div className="rounded-xl overflow-hidden border border-border/40 relative bg-zinc-900" style={{ aspectRatio: "16/9" }}>
+                    <video
+                      src={incident.videoSrc}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[8px] font-bold tracking-widest z-10">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      FEED RECORD
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-black/60 border border-white/10 px-2 py-1 rounded backdrop-blur z-10 text-[9px]">
+                      {incident.camera}
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Description */}
-          <div className="rounded-xl border border-border/40 bg-secondary/40 p-4 space-y-1.5">
-            <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">INCIDENT OVERVIEW</span>
-            <p className="text-foreground/90 leading-relaxed">{incident.description}</p>
-          </div>
-
-          {/* Live Video Stream */}
-          {incident.videoSrc && (
-            <div className="space-y-2">
-              <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">RETRIEVED VIDEO CAPTURE</span>
-              <div className="rounded-xl overflow-hidden border border-border/40 relative bg-zinc-900" style={{ aspectRatio: "16/9" }}>
-                <video
-                  src={incident.videoSrc}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[8px] font-bold tracking-widest z-10">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  FEED RECORD
                 </div>
-                <div className="absolute bottom-3 left-3 bg-black/60 border border-white/10 px-2 py-1 rounded backdrop-blur z-10 text-[9px]">
-                  {incident.camera}
-                </div>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </div>
 
@@ -499,8 +700,8 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
         </div>
       </div>
 
-      {/* ── FIR SCAN MODAL ── */}
-      {showFirDetail && incident.kind === "stolen_vehicle" && incident.detail?.firImage && (
+      {/* ── FIR/WARRANT SCAN MODAL ── */}
+      {showFirDetail && (incident.kind === "stolen_vehicle" || incident.id === "EVT-205") && incident.detail?.firImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/75 backdrop-blur-sm"
@@ -511,7 +712,10 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 <span className="text-sm font-bold tracking-wide">
-                  SCANNED FIR — No. {incident.detail?.firNo} · STOLEN VEHICLE {incident.detail?.plate}
+                  {incident.kind === "flagged_person" 
+                    ? `SCANNED WARRANT — No. ${incident.detail?.firNo} · SUSPECT ${incident.detail?.personName}` 
+                    : `SCANNED FIR — No. ${incident.detail?.firNo} · STOLEN VEHICLE ${incident.detail?.plate}`
+                  }
                 </span>
               </div>
               <button
@@ -522,11 +726,11 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-0 overflow-y-auto">
-              {/* FIR document */}
+              {/* Document */}
               <div className="relative bg-black/60 p-4 flex items-start justify-center">
                 <img
                   src={incident.detail?.firImage}
-                  alt={`Scanned FIR No. ${incident.detail?.firNo}`}
+                  alt="Scanned Document"
                   className="max-h-[70vh] w-auto rounded border border-border/60 shadow-lg"
                 />
                 <div className="absolute top-6 left-6 px-2 py-0.5 rounded bg-black/70 border border-tactical-green/40 text-[8px] font-mono font-bold tracking-widest text-tactical-green flex items-center gap-1">
@@ -537,9 +741,17 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
               {/* Extracted fields */}
               <div className="p-4 space-y-2 border-l border-border/40 font-mono text-[10px]">
                 <p className="text-[9px] tracking-[0.15em] text-muted-foreground uppercase mb-1">
-                  Extracted FIR Data
+                  {incident.kind === "flagged_person" ? "Extracted Warrant & CNIC Data" : "Extracted FIR Data"}
                 </p>
-                {[
+                {(incident.kind === "flagged_person" ? [
+                  ["Suspect Name", incident.detail?.personName || ""],
+                  ["CNIC Number", "61101-9876543-1"],
+                  ["Warrant No.", incident.detail?.firNo || ""],
+                  ["Date Issued", incident.detail?.firDate || ""],
+                  ["Issuing Court", "Magistrate Court, Islamabad (ICT)"],
+                  ["Jurisdiction", incident.detail?.policeStation || ""],
+                  ["Charges", incident.detail?.flagReason || ""],
+                ] : [
                   ["FIR No.", incident.detail?.firNo || ""],
                   ["Date Lodged", incident.detail?.firDate || ""],
                   ["Police Station", incident.detail?.policeStation || ""],
@@ -547,14 +759,37 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                   ["Contact", incident.detail?.contact || ""],
                   ["Vehicle", incident.detail?.vehicleDesc || ""],
                   ["Registration", incident.detail?.plate || ""],
-                ].map(([k, v]) => (
+                ]).map(([k, v]) => (
                   <div key={k} className="bg-accent/30 rounded px-2.5 py-1.5">
                     <span className="text-muted-foreground block text-[8px] uppercase tracking-wider">{k}</span>
-                    <span className={k === "Registration" ? "text-tactical-red font-bold tracking-widest" : "text-foreground"}>{v}</span>
+                    <span className={k === "Registration" || k === "CNIC Number" ? "text-tactical-red font-bold tracking-widest" : "text-foreground"}>{v}</span>
                   </div>
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── IMAGE ZOOM MODAL ── */}
+      {zoomedImage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/85 backdrop-blur-md cursor-zoom-out"
+            onClick={() => setZoomedImage(null)}
+          />
+          <div className="relative max-w-4xl max-h-[85vh] z-[110] animate-in fade-in zoom-in-95 duration-200 flex flex-col items-center justify-center">
+            <button
+              onClick={() => setZoomedImage(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-black/60 border border-white/20 text-white hover:bg-black/85 transition-colors cursor-pointer z-[120]"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <img
+              src={zoomedImage}
+              alt="Zoomed View"
+              className="max-h-[80vh] max-w-full rounded-lg border border-border shadow-2xl object-contain bg-[#0a0f1d]"
+            />
           </div>
         </div>
       )}
@@ -663,6 +898,109 @@ function EventDetailModal({ event, onClose }: { event: SecurityEvent; onClose: (
   );
 }
 
+function ASFGroupDetailModal({ group, onClose }: { group: ASFGroup; onClose: () => void }) {
+  const isOfficer = group.unitType === "officer";
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-55 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative z-10 w-full max-w-md bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className={`px-5 py-4 border-b border-border/40 flex items-center justify-between bg-secondary/20`}>
+          <div className="flex items-center gap-2.5 font-mono">
+            <div className={`h-8 w-8 rounded-lg flex items-center justify-center border ${
+              isOfficer ? "bg-tactical-cyan/10 border-tactical-cyan/35 text-tactical-cyan" : "bg-tactical-green/10 border-tactical-green/35 text-tactical-green"
+            }`}>
+              {isOfficer ? <User className="h-4 w-4" /> : <Car className="h-4 w-4" />}
+            </div>
+            <div>
+              <h2 className="font-bold text-foreground text-sm tracking-tight">
+                Unit Detail — {group.callsign}
+              </h2>
+              <span className="text-[9px] text-muted-foreground block mt-0.5">
+                Database ID: {group.id}
+              </span>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-4 font-mono text-xs">
+          {/* Status badge and zone */}
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">CURRENT STATUS</span>
+            <div className="flex items-center gap-2">
+              <span className={`h-2 w-2 rounded-full ${
+                group.status === "available" ? "bg-tactical-green animate-pulse" : "bg-tactical-amber animate-pulse"
+              }`} />
+              <span className={`font-bold ${
+                group.status === "available" ? "text-tactical-green" : "text-tactical-amber"
+              } uppercase`}>
+                {group.status.replace("_", " ")}
+              </span>
+            </div>
+          </div>
+
+          {/* Details list */}
+          <div className="rounded-xl border border-border/40 overflow-hidden bg-secondary/40">
+            {[
+              { label: "Unit Callsign", value: group.callsign, highlight: true },
+              { label: "Assigned Name", value: group.name },
+              { label: isOfficer ? "Officer Rank" : "Patrol Vehicle", value: isOfficer ? group.rank || "Constable" : group.vehicle },
+              { label: "Deployed Sector", value: group.assignedTo },
+              { label: "Active Post", value: group.destination },
+              { label: "Deployed Zone", value: group.zone, color: group.zone === "Zone A" ? "text-tactical-green" : group.zone === "Zone B" ? "text-tactical-amber" : "text-tactical-red" },
+              { label: isOfficer ? "Personnel Count" : "Responding Crew", value: `${group.personnel} Personnel` },
+              { label: "Current Destination", value: group.destination },
+              { label: "Current ETA", value: group.eta || "Patrolling", color: "text-tactical-green" },
+              { label: "GPS Coordinates", value: `${group.lat.toFixed(5)}°, ${group.lng.toFixed(5)}°`, color: "text-tactical-cyan" }
+            ].map(({ label, value, color, highlight }, i, arr) => (
+              <div key={label} className={`flex items-center justify-between px-4 py-2.5 ${i !== arr.length - 1 ? "border-b border-border/20" : ""}`}>
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wider">{label}</span>
+                <span className={`font-bold text-right ${color || "text-foreground"} ${highlight ? "text-tactical-cyan" : ""}`}>{value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Capabilities */}
+          <div className="space-y-1.5">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider block">Unit Capabilities</span>
+            <div className="flex flex-wrap gap-1.5">
+              {group.capabilities.map((cap) => (
+                <span key={cap} className="px-2 py-1 rounded bg-secondary border border-border font-mono text-[9px] font-bold text-foreground/80 uppercase">
+                  {cap.replace("_", " ")}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="p-4 border-t border-border/40 bg-secondary/20 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-secondary hover:bg-secondary/70 border border-border/60 text-foreground font-mono text-[10px] font-bold rounded transition-colors uppercase cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { groups, incidents } = useASF();
   const [mounted, setMounted] = useState(false);
@@ -671,6 +1009,16 @@ export default function DashboardPage() {
   const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
   const [selectedIncidentDetail, setSelectedIncidentDetail] = useState<Incident | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [selectedGroupDetail, setSelectedGroupDetail] = useState<ASFGroup | null>(null);
+
+  useEffect(() => {
+    if (selectedIncident) {
+      const inc = incidents.find((i) => i.id === selectedIncident);
+      if (inc) setSelectedIncidentDetail(inc);
+    } else {
+      setSelectedIncidentDetail(null);
+    }
+  }, [selectedIncident, incidents]);
 
   useEffect(() => setMounted(true), []);
 
@@ -771,7 +1119,11 @@ export default function DashboardPage() {
                 }))}
                 selectedGroup={selectedGroup}
                 selectedIncident={selectedIncident}
-                onSelectGroup={setSelectedGroup}
+                onSelectGroup={(id) => {
+                  setSelectedGroup(id);
+                  const g = groups.find((group) => group.id === id);
+                  if (g) setSelectedGroupDetail(g);
+                }}
                 onSelectIncident={setSelectedIncident}
                 fitAllZones
               />
@@ -914,7 +1266,10 @@ export default function DashboardPage() {
                                 ? "bg-tactical-green/5 border-l-2 border-l-tactical-green"
                                 : "hover:bg-accent/20 border-l-2 border-l-transparent"
                             }`}
-                            onClick={() => setSelectedGroup(unit.id)}
+                            onClick={() => {
+                              setSelectedGroup(unit.id);
+                              setSelectedGroupDetail(unit);
+                            }}
                           >
                             <div className={`h-7 w-7 rounded-md border flex items-center justify-center shrink-0 ${
                               unit.unitType === "officer"
@@ -972,7 +1327,18 @@ export default function DashboardPage() {
 
       {/* Incident Detail Modal */}
       {selectedIncidentDetail && (
-        <IncidentDetailModal incident={selectedIncidentDetail} onClose={() => setSelectedIncidentDetail(null)} />
+        <IncidentDetailModal 
+          incident={selectedIncidentDetail} 
+          onClose={() => {
+            setSelectedIncidentDetail(null);
+            setSelectedIncident(null);
+          }} 
+        />
+      )}
+
+      {/* ASF Unit Detail Modal */}
+      {selectedGroupDetail && (
+        <ASFGroupDetailModal group={selectedGroupDetail} onClose={() => setSelectedGroupDetail(null)} />
       )}
     </>
   );
