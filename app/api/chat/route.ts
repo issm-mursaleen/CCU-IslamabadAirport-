@@ -3,10 +3,6 @@ import OpenAI from "openai";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 async function loadKnowledgeBase(): Promise<string> {
   try {
     const filePath = join(process.cwd(), "data", "knowledge-base.md");
@@ -31,6 +27,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const knowledgeBase = await loadKnowledgeBase();
 
