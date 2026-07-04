@@ -2,21 +2,13 @@
 
 import {
   Crosshair,
-  ShieldCheck,
-  GraduationCap,
-  Users,
-  Bell,
-  Bot,
   LayoutDashboard,
-  Map,
-  Settings,
-  LogOut,
-  Radio,
-  Sun,
-  Moon,
   Cctv,
   Car,
-  AlertTriangle,
+  Settings,
+  LogOut,
+  Sun,
+  Moon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -68,41 +60,6 @@ const data = {
       title: "ASF Patrols",
       url: "/dashboard/asf",
       icon: Crosshair,
-    },
-    {
-      title: "Perimeter Map",
-      url: "/dashboard/perimeter-map",
-      icon: Map,
-    },
-    {
-      title: "Guard Compliance",
-      url: "/dashboard/compliance",
-      icon: ShieldCheck,
-    },
-    {
-      title: "Training Mgmt",
-      url: "/dashboard/training",
-      icon: GraduationCap,
-    },
-    {
-      title: "Deployment",
-      url: "/dashboard/deployment",
-      icon: Users,
-    },
-    {
-      title: "Alert System",
-      url: "/dashboard/alerts",
-      icon: Bell,
-    },
-    {
-      title: "Threat Intel",
-      url: "/dashboard/analytics",
-      icon: AlertTriangle,
-    },
-    {
-      title: "AI Assistant",
-      url: "/dashboard/ai-assistant",
-      icon: Bot,
     },
   ],
 };

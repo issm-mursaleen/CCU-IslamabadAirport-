@@ -9,10 +9,7 @@ import {
   AlertTriangle,
   Radio,
   Video,
-  Eye,
-  Camera,
   Users,
-  Lock,
 } from "lucide-react";
 
 // Load PTBMapCanvas dynamically to support Leaflet client-side rendering
@@ -31,23 +28,20 @@ const PTBMapCanvas = dynamic(() => import("@/components/ptb-map-canvas"), {
 });
 
 const CAMERA_FEEDS = [
-  { id: "CAM-101", name: "L1 MAIN GATE ANPR", zone: "Terminal L1", src: "/videos/vehicle_traffic_output_exit.mp4", status: "live" },
-  { id: "CAM-112", name: "L1 DEPARTURES QUEUE COUNTER", zone: "Terminal L1", src: "/videos/counter_people in que.mp4", status: "live" },
-  { id: "CAM-105", name: "L1 IMMIGRATION QUEUE COUNTER", zone: "Terminal L1", src: "/videos/counter_people_que.mp4", status: "live" },
-  { id: "CAM-108", name: "L1 ARRIVALS BAGGAGE CLAIM CAROUSEL 4", zone: "Terminal L1", src: "/videos/bag_count_output baggeges.mp4", status: "live" },
-  { id: "CAM-201", name: "L2 PASSPORT CONTROL FIA COUNTER", zone: "Terminal L2", src: "/videos/Fia_counter.mp4", status: "live" },
-  { id: "CAM-205", name: "L2 TERMINAL EXIT VEHICLE TRAFFIC", zone: "Terminal L2", src: "/videos/vehicle_traffic_output_exit.mp4", status: "live" },
-  { id: "CAM-208", name: "L2 TERMINAL PARKING AREA", zone: "Terminal L2", src: "/videos/plate_recognition_output_parking_area.mp4", status: "live" },
-  { id: "CAM-212", name: "L2 COUNTER ZONE TRACKER 1", zone: "Terminal L2", src: "/videos/zone_tracker_output_1_counter_area.mp4", status: "live" },
-  { id: "CAM-215", name: "L2 COUNTER ZONE TRACKER 2", zone: "Terminal L2", src: "/videos/zone_tracker_output_counter.mp4", status: "live" },
-  { id: "CAM-301", name: "L3 BOARDING GATE 12 EXIT", zone: "Terminal L3", src: "/videos/face+_detection_airplane_Exit.mp4", status: "live" }
+  { id: "CAM-311", name: "ZONE B — CHECK-IN HALL", zone: "Zone B", src: "/videos/counter_people_que.mp4", status: "live" },
+  { id: "CAM-317", name: "ZONE B — FIA IMMIGRATION COUNTERS", zone: "Zone B", src: "/videos/zone_tracker_output_counter.mp4", status: "live" },
+  { id: "CAM-322", name: "ZONE B — DEPARTURE STAND A SEATING", zone: "Zone B", src: "/videos/forgotten-trolley-case-stand-a.mp4", status: "live" },
+  { id: "CAM-305", name: "ZONE B — TERMINAL PARKING AREA", zone: "Zone B", src: "/videos/plate_recognition_output_parking_area.mp4", status: "live" },
+  { id: "CAM-308", name: "ZONE B — ARRIVALS BAGGAGE CLAIM", zone: "Zone B", src: "/videos/bag_count_output baggeges.mp4", status: "live" },
+  { id: "CAM-314", name: "ZONE B — DEPARTURES QUEUE COUNTER", zone: "Zone B", src: "/videos/counter_people_que.mp4", status: "live" },
+  { id: "CAM-319", name: "ZONE B — INTERNATIONAL WING EXIT", zone: "Zone B", src: "/videos/vehicle_traffic_output_exit.mp4", status: "live" },
+  { id: "CAM-323", name: "ZONE B — FIA ZONE TRACKER 1", zone: "Zone B", src: "/videos/Fia_counter.mp4", status: "live" },
+  { id: "CAM-326", name: "ZONE B — FIA ZONE TRACKER 2", zone: "Zone B", src: "/videos/zone_tracker_output_counter.mp4", status: "live" },
+  { id: "CAM-330", name: "ZONE B — GATE 12 BOARDING EXIT", zone: "Zone B", src: "/videos/face+_detection_airplane_Exit.mp4", status: "live" },
 ];
 
 const CAMERA_GROUPS = [
-  { id: "all", name: "All Levels", zones: [] },
-  { id: "terminal-l1", name: "Level 1 Terminal", zones: ["Terminal L1"] },
-  { id: "terminal-l2", name: "Level 2 Terminal", zones: ["Terminal L2"] },
-  { id: "terminal-l3", name: "Level 3 Terminal", zones: ["Terminal L3"] },
+  { id: "all", name: "All Cameras", zones: [] },
 ];
 
 type EventLevel = "critical" | "high" | "medium" | "low";
@@ -79,171 +73,89 @@ const eventLevelConfig: Record<EventLevel, { bg: string; text: string; border: s
 const LIVE_EVENTS: LiveEvent[] = [
   {
     id: 1,
-    title: "NADRA Watchlist Match Alert",
-    camId: "CAM-301",
-    location: "L3 Boarding Gate 12 Exit",
-    cam: "CAM-301 • Gate Exit",
-    time: "12:15",
-    timestamp: "06/03/2026, 12:15:55",
-    color: "text-tactical-red",
-    level: "critical",
-    confidence: 93,
-    icon: Eye,
-    description: "NADRA Facial matching engine identified a critical watchlist match. CNIC masked for privacy (37405-*******-1). Active re-identification tracking initiated.",
-    action: "Notify intercept team. Lock tracking loop on twin.",
-    video: "/videos/face+_detection_airplane_Exit.mp4",
-  },
-  {
-    id: 2,
-    title: "Plate Captured — Outer Cordon",
-    camId: "CAM-101",
-    location: "L1 Outer Cordon Gate",
-    cam: "CAM-101 • Main Gate ANPR",
-    time: "13:15",
-    timestamp: "06/03/2026, 13:15:22",
-    color: "text-tactical-cyan",
-    level: "medium",
-    confidence: 92,
-    icon: Lock,
-    description: "ANPR Outer Cordon camera captured vehicle approaching. Plate resolved: LEB-17-4490.",
-    action: "Processing database lookup...",
-    video: "/videos/vehicle_traffic_output_exit.mp4",
-  },
-  {
-    id: 3,
-    title: "Queue Congestion Alert",
-    camId: "CAM-112",
-    location: "L1 Intl Departures Corridor",
-    cam: "CAM-112 • Queue Counter",
+    title: "Queue Congestion — Check-in Hall",
+    camId: "CAM-311",
+    location: "Zone B — Check-in Hall",
+    cam: "CAM-311 • Check-in Hall",
     time: "14:23",
     timestamp: "06/03/2026, 14:23:11",
     color: "text-tactical-amber",
     level: "high",
     confidence: 94,
     icon: Users,
-    description: "People in Queue Counter flagged high crowd density at departures corridor, with queue lengths exceeding safety limits.",
+    description: "People in Queue Counter flagged high crowd density at departures corridor due to boarding queue for flight TK-711 to Istanbul (IST).",
     action: "Coordinate queue lines. Dispatch marshals to manage crowd flow.",
-    video: "/videos/counter_people in que.mp4",
-  },
-  {
-    id: 4,
-    title: "Queue Overcrowding",
-    camId: "CAM-105",
-    location: "L1 Terminal Entrance Queue",
-    cam: "CAM-105 • Queue Counter",
-    time: "14:18",
-    timestamp: "06/03/2026, 14:18:44",
-    color: "text-tactical-amber",
-    level: "high",
-    confidence: 91,
-    icon: Users,
-    description: "Immigration Queue Counter flagged crowd congestion buildup near entrance corridor checkpost.",
-    action: "Open auxiliary counter to distribute queue load.",
     video: "/videos/counter_people_que.mp4",
   },
   {
-    id: 5,
-    title: "Baggage Accumulation Alert",
-    camId: "CAM-108",
-    location: "L1 Arrivals Hall Carousel 4",
-    cam: "CAM-108 • Baggage Count",
-    time: "14:11",
-    timestamp: "06/03/2026, 14:11:02",
-    color: "text-tactical-red",
-    level: "critical",
-    confidence: 95,
-    icon: AlertTriangle,
-    description: "Baggage Count tracker flagged a high volume of luggage accumulating on Carousel 4.",
-    action: "Direct baggage handlers to clear the carousel belt conveyor.",
-    video: "/videos/bag_count_output baggeges.mp4",
-  },
-  {
-    id: 6,
+    id: 2,
     title: "FIA Counter Overcrowding",
-    camId: "CAM-201",
-    location: "L2 Passport Control Queue",
-    cam: "CAM-201 • FIA Counter",
+    camId: "CAM-317",
+    location: "Zone B — FIA Immigration Counters",
+    cam: "CAM-317 • FIA Counters",
     time: "13:42",
     timestamp: "06/03/2026, 13:42:15",
     color: "text-tactical-amber",
     level: "high",
     confidence: 97,
     icon: Users,
-    description: "Passport Control FIA Counter lines have exceeded 90% capacity, causing substantial bottlenecks.",
+    description: "Passport Control FIA Counter lines have exceeded 90% capacity due to flight TK-711 boarding to Istanbul (IST), causing bottlenecks.",
     action: "Notify immigration supervisors to activate backup check stations immediately.",
-    video: "/videos/Fia_counter.mp4",
-  },
-  {
-    id: 7,
-    title: "Terminal Exit Traffic Alert",
-    camId: "CAM-205",
-    location: "L2 Terminal Departures Lane",
-    cam: "CAM-205 • Traffic Counter",
-    time: "13:30",
-    timestamp: "06/03/2026, 13:30:08",
-    color: "text-tactical-cyan",
-    level: "medium",
-    confidence: 88,
-    icon: Camera,
-    description: "Vehicle Traffic Exit tracker flagged congestion buildup at the terminal exit lanes.",
-    action: "Deploy traffic wardens to clear and direct vehicle exits.",
-    video: "/videos/vehicle_traffic_output_exit.mp4",
-  },
-  {
-    id: 8,
-    title: "Counter Area Zone Breach",
-    camId: "CAM-212",
-    location: "L2 Counter Zone Tracker 1",
-    cam: "CAM-212 • Zone Tracker",
-    time: "12:55",
-    timestamp: "06/03/2026, 12:55:40",
-    color: "text-tactical-amber",
-    level: "high",
-    confidence: 89,
-    icon: AlertTriangle,
-    description: "Zone Tracker flagged passenger crossing secure boundary lines near counter area 1.",
-    action: "Send terminal security agent to guide the passenger back.",
-    video: "/videos/zone_tracker_output_1_counter_area.mp4",
-  },
-  {
-    id: 9,
-    title: "Counter Zone Tracking Alert",
-    camId: "CAM-215",
-    location: "L2 Counter Zone Tracker 2",
-    cam: "CAM-215 • Zone Tracker",
-    time: "12:40",
-    timestamp: "06/03/2026, 12:40:11",
-    color: "text-tactical-cyan",
-    level: "medium",
-    confidence: 86,
-    icon: Eye,
-    description: "Zone Tracker monitoring crowd movements and securing boundaries near counter area 2.",
-    action: "Ensure queue barriers are properly aligned.",
     video: "/videos/zone_tracker_output_counter.mp4",
+  },
+  {
+    id: 3,
+    title: "Unattended Baggage Detected",
+    camId: "CAM-322",
+    location: "Zone B — Departure Stand A Seating",
+    cam: "CAM-322 • Stand A Seating",
+    time: "15:20",
+    timestamp: "06/03/2026, 15:20:01",
+    color: "text-tactical-red",
+    level: "critical",
+    confidence: 96,
+    icon: AlertTriangle,
+    description: "AI object abandonment algorithm flagged a grey trolley suitcase left unattended for over 5 minutes at Stand A seating area.",
+    action: "Isolate 10m radius. Deploy BRAVO-1 with K9 for immediate manual inspection.",
+    video: "/videos/forgotten-trolley-case-stand-a.mp4",
+  },
+  {
+    id: 4,
+    title: "Baggage Accumulation Alert",
+    camId: "CAM-308",
+    location: "Zone B — Arrivals Baggage Claim",
+    cam: "CAM-308 • Baggage Count",
+    time: "14:11",
+    timestamp: "06/03/2026, 14:11:02",
+    color: "text-tactical-red",
+    level: "critical",
+    confidence: 95,
+    icon: AlertTriangle,
+    description: "Baggage Count tracker flagged a high volume of luggage accumulating on Carousel 4 with no handlers clearing the belt.",
+    action: "Direct baggage handlers to clear the carousel belt conveyor immediately.",
+    video: "/videos/bag_count_output baggeges.mp4",
   },
 ];
 
 const mapEventCamIdToMarkerId = (camId: string): string => {
   switch (camId) {
-    case "CAM-101": return "CAM-PTB-GATE-ANPR";
-    case "CAM-112": return "CAM-PTB-CONG";
-    case "CAM-105": return "CAM-PTB-LOIT";
-    case "CAM-108": return "CAM-PTB-BAG";
-    case "CAM-201": return "CAM-LVL2-CROWD";
-    case "CAM-205": return "CAM-LVL2-LCONG";
-    case "CAM-208": return "CAM-LVL2-BCONG";
-    case "CAM-212": return "CAM-LVL2-DROP";
-    case "CAM-215": return "CAM-LVL2-OVER";
-    case "CAM-301": return "CAM-LVL3-FAULT";
+    case "CAM-311": return "CAM-PTB-CONG";
+    case "CAM-317": return "CAM-LVL2-CROWD";
+    case "CAM-322": return "CAM-PTB-BAG";
+    case "CAM-305": return "CAM-LVL2-BCONG";
+    case "CAM-308": return "CAM-PTB-BAG";
+    case "CAM-314": return "CAM-PTB-CONG";
+    case "CAM-319": return "CAM-LVL2-LCONG";
+    case "CAM-323": return "CAM-LVL2-DROP";
+    case "CAM-326": return "CAM-LVL2-OVER";
+    case "CAM-330": return "CAM-LVL3-FAULT";
     default: return camId;
   }
 };
 
 const getCameraLevel = (camId: string): 1 | 2 | 3 => {
-  if (camId.startsWith("CAM-1")) return 1;
-  if (camId.startsWith("CAM-2")) return 2;
-  if (camId.startsWith("CAM-3")) return 3;
-  return 1;
+  // All Zone B cameras map to their nearest floor plan level
+  return 2;
 };
 
 function timeNow() {
@@ -295,10 +207,7 @@ export default function SurveillancePage() {
               key={g.id}
               onClick={() => {
                 setSelectedGroup(g.id);
-                if (g.id === "terminal-l1") setActiveLevel(1);
-                else if (g.id === "terminal-l2") setActiveLevel(2);
-                else if (g.id === "terminal-l3") setActiveLevel(3);
-                else if (g.id === "all") setActiveLevel(1);
+                setActiveLevel(2);
               }}
               className={`w-full flex items-center justify-between px-2 py-2 text-xs font-mono rounded transition-colors group ${selectedGroup === g.id
                   ? "bg-tactical-cyan/10 text-tactical-cyan"
@@ -324,9 +233,8 @@ export default function SurveillancePage() {
                 <button
                   key={ev.id}
                   onClick={() => {
-                    const level = getCameraLevel(ev.camId);
-                    setActiveLevel(level);
-                    setSelectedGroup(level === 1 ? "terminal-l1" : level === 2 ? "terminal-l2" : "terminal-l3");
+                    setActiveLevel(2);
+                    setSelectedGroup("zone-b");
                     setSelectedCameraId(mapEventCamIdToMarkerId(ev.camId));
                   }}
                   className="w-full text-left rounded-lg border border-border/30 hover:border-border/60 bg-secondary/30 hover:bg-secondary/60 transition-colors p-3 group"
@@ -363,7 +271,7 @@ export default function SurveillancePage() {
           <div className="flex items-center gap-3 md:gap-6">
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md bg-tactical-red/10 border border-tactical-red/30 text-tactical-red">
               <AlertTriangle className="h-3.5 w-3.5 blink" />
-              <span className="font-mono text-[10px] font-bold tracking-wider">9 ALARMS</span>
+              <span className="font-mono text-[10px] font-bold tracking-wider">4 ALARMS</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-tactical-red/15 border border-tactical-red/40 text-tactical-red">
               <div className="h-2 w-2 rounded-full bg-tactical-red blink" />

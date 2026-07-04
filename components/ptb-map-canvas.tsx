@@ -167,7 +167,7 @@ const mockMarkers: InteractiveMarker[] = [
     y: 45,
     status: "alert",
     details: "ANOMALY DETECTED: People in Queue Counter shows high queue density at departures corridor.",
-    videoUrl: "/videos/counter_people in que.mp4",
+    videoUrl: "/videos/counter_people_que.mp4",
     angle: 45,
     lat: 33.5562,
     lng: 72.8290,
@@ -179,8 +179,8 @@ const mockMarkers: InteractiveMarker[] = [
     name: "CAM-105 (L1 Immigration Queue Counter)",
     x: 70,
     y: 62,
-    status: "alert",
-    details: "ANOMALY DETECTED: People Queue Counter shows building congestion near secure checkpoint.",
+    status: "active",
+    details: "Immigration Queue Counter operating normally. Monitoring passenger throughput.",
     videoUrl: "/videos/counter_people_que.mp4",
     angle: 135,
     lat: 33.5552,
@@ -193,8 +193,8 @@ const mockMarkers: InteractiveMarker[] = [
     name: "CAM-108 (L1 Arrivals Baggage Claim Carousel 4)",
     x: 44,
     y: 31,
-    status: "alert",
-    details: "ANOMALY DETECTED: Baggage Count tracker flagged high volume of luggage building up on Carousel 4.",
+    status: "active",
+    details: "Baggage Count tracker operational. Monitoring carousel throughput.",
     videoUrl: "/videos/bag_count_output baggeges.mp4",
     angle: 225,
     lat: 33.5546,
@@ -247,7 +247,7 @@ const mockMarkers: InteractiveMarker[] = [
     y: 48,
     status: "alert",
     details: "ANOMALY DETECTED: FIA Counter capacity Warning. Crowd build-up and queuing congestion.",
-    videoUrl: "/videos/Fia_counter.mp4",
+    videoUrl: "/videos/zone_tracker_output_counter.mp4",
     angle: 45,
     lat: 33.5550,
     lng: 72.8305,
@@ -259,8 +259,8 @@ const mockMarkers: InteractiveMarker[] = [
     name: "CAM-205 (L2 Terminal Exit Vehicle Traffic)",
     x: 18,
     y: 76,
-    status: "alert",
-    details: "ANOMALY DETECTED: Vehicle Traffic Exit shows severe lane congestion at terminal exit point.",
+    status: "active",
+    details: "Vehicle Traffic Exit monitoring lane flow. No anomalies detected.",
     videoUrl: "/videos/vehicle_traffic_output_exit.mp4",
     angle: 135,
     lat: 33.5535,
@@ -273,8 +273,8 @@ const mockMarkers: InteractiveMarker[] = [
     name: "CAM-208 (L2 Terminal Parking Area)",
     x: 46,
     y: 28,
-    status: "alert",
-    details: "ANOMALY DETECTED: Plate Recognition flags suspicious/unregistered vehicle in parking area.",
+    status: "active",
+    details: "Plate Recognition system active. Monitoring parking area entries and exits.",
     videoUrl: "/videos/plate_recognition_output_parking_area.mp4",
     angle: 385,
     lat: 33.5525,
@@ -289,7 +289,7 @@ const mockMarkers: InteractiveMarker[] = [
     y: 64,
     status: "alert",
     details: "ANOMALY DETECTED: Zone Tracker flags passenger crossing secure boundary lines near counter area 1.",
-    videoUrl: "/videos/zone_tracker_output_1_counter_area.mp4",
+    videoUrl: "/videos/Fia_counter.mp4",
     angle: 315,
     lat: 33.5558,
     lng: 72.8298,
@@ -301,8 +301,8 @@ const mockMarkers: InteractiveMarker[] = [
     name: "CAM-215 (L2 Counter Zone Tracker 2)",
     x: 52,
     y: 60,
-    status: "alert",
-    details: "ANOMALY DETECTED: Zone Tracker monitoring crowd movements and securing boundaries near counter area 2.",
+    status: "active",
+    details: "Zone Tracker monitoring crowd movements near counter area 2. No boundary violations.",
     videoUrl: "/videos/zone_tracker_output_counter.mp4",
     angle: 45,
     lat: 33.5560,
@@ -583,10 +583,7 @@ export default function PTBMapCanvas({
     });
 
   const filteredMarkers = currentMarkers.filter((m) => {
-    let matchesOverlay = true;
-    if (activeOverlay === "cameras" && m.type !== "camera") matchesOverlay = false;
-    if (activeOverlay === "guards" && m.type !== "guard") matchesOverlay = false;
-    if (activeOverlay === "gates" && m.type !== "gate") matchesOverlay = false;
+    if (m.type !== "camera") return false;
 
     let matchesSearch = true;
     if (searchQuery) {
@@ -594,7 +591,7 @@ export default function PTBMapCanvas({
       matchesSearch = m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q);
     }
 
-    return matchesOverlay && matchesSearch;
+    return matchesSearch;
   });
 
   const alertCount = currentMarkers.filter((m) => m.status === "alert").length;
@@ -617,7 +614,7 @@ export default function PTBMapCanvas({
         <div className="absolute top-3 left-3 z-[1000] flex items-center gap-3">
 
           {/* Floor Level Switcher */}
-          <div className="flex items-center gap-2 p-1.5 rounded-lg bg-[#070b10cc] border border-border/60 backdrop-blur-md">
+          <div className="flex items-center gap-2 p-1.5 rounded-lg bg-card/95 border border-border/80 backdrop-blur-md shadow-md">
             <span className="font-mono text-[9px] font-bold text-muted-foreground ml-1 uppercase tracking-wider">FLOOR:</span>
             {[
               { id: 1, label: "L1" },
@@ -638,29 +635,6 @@ export default function PTBMapCanvas({
                   }`}
               >
                 {lvl.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Sub-Layer Filter */}
-          <div className="flex items-center gap-2 p-1.5 rounded-lg bg-[#070b10cc] border border-border/60 backdrop-blur-md">
-            <Layers className="h-3.5 w-3.5 text-tactical-cyan ml-1" />
-            <div className="h-4 w-px bg-border/60 mx-0.5" />
-            {[
-              { id: "all", label: "ALL" },
-              { id: "cameras", label: "CAMS" },
-              { id: "gates", label: "GATES" },
-              { id: "guards", label: "PATROLS" },
-            ].map((layer) => (
-              <button
-                key={layer.id}
-                onClick={() => setActiveOverlay(layer.id as any)}
-                className={`font-mono text-[9px] font-bold px-2 py-1 rounded transition-colors uppercase tracking-wider cursor-pointer ${activeOverlay === layer.id
-                  ? "bg-tactical-cyan/15 text-tactical-cyan border border-tactical-cyan/30"
-                  : "text-muted-foreground hover:text-foreground border border-transparent"
-                  }`}
-              >
-                {layer.label}
               </button>
             ))}
           </div>
@@ -701,81 +675,9 @@ export default function PTBMapCanvas({
               <Tooltip permanent direction="center" className="zone-label">ZONE C</Tooltip>
             </Polygon>
 
-            {/* Render dynamic QRF/ASF Patrol groups */}
-            {(activeOverlay === "all" || activeOverlay === "guards") ? groups.map((g) => {
-              const isSelected = false;
-              const statusColor = statusColorMap[g.status] || "#00FF9D";
-              const isVehicle = g.unitType === "vehicle";
-              const customIcon = isVehicle 
-                ? getVehicleIcon("#26C6DA", statusColor, g.heading, isSelected)
-                : getOfficerIcon(statusColor, isSelected);
 
-              return (
-                <Marker
-                  key={g.id}
-                  position={[g.lat, g.lng]}
-                  icon={customIcon}
-                >
-                  <Tooltip permanent={false} direction="top">
-                    <span className="font-mono text-xs font-bold text-foreground">
-                      {g.callsign} (${g.name})
-                    </span>
-                  </Tooltip>
-                </Marker>
-              );
-            }) : null}
+            {/* Incidents are shown in Command Center / ASF Patrols, not on surveillance map */}
 
-            {/* Render active incidents */}
-            {incidents.filter(inc => inc.status !== "resolved").map((inc) => {
-              const color = incidentColorMap[inc.typeCode || "red"] || "#FF3D3D";
-              
-              const alertHtml = `
-                <div class="relative flex items-center justify-center w-10 h-10" style="transform: translate(-10px, -10px);">
-                  <div class="absolute rounded-full animate-ping opacity-75" style="background-color: ${color}; width: 32px; height: 32px;"></div>
-                  <div class="absolute rounded-full" style="background-color: ${color}; width: 14px; height: 14px; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
-                </div>
-              `;
-              
-              const alertIcon = L.divIcon({
-                html: alertHtml,
-                className: "custom-leaflet-alert",
-                iconSize: [20, 20],
-                iconAnchor: [10, 10],
-              });
-
-              return (
-                <Marker
-                  key={inc.id}
-                  position={[inc.lat, inc.lng]}
-                  icon={alertIcon}
-                  eventHandlers={{
-                    click: () => {
-                      if (inc.id === "EVT-202" || inc.id === "EVT-201") {
-                        const marker = mockMarkers.find(m => m.id === "CAM-PTB-GATE-ANPR");
-                        if (marker) {
-                          setOpenTabs((prev) => prev.some(t => t.id === marker.id) ? prev : [...prev, marker]);
-                          setActiveTabId(marker.id);
-                          setIsPlayingFeed(true);
-                          if (onSelectCamera) onSelectCamera(marker.id);
-                        }
-                      } else if (inc.id === "EVT-205" || inc.id === "EVT-206") {
-                        const marker = mockMarkers.find(m => m.id === "CAM-LVL3-FAULT");
-                        if (marker) {
-                          setOpenTabs((prev) => prev.some(t => t.id === marker.id) ? prev : [...prev, marker]);
-                          setActiveTabId(marker.id);
-                          setIsPlayingFeed(true);
-                          if (onSelectCamera) onSelectCamera(marker.id);
-                        }
-                      }
-                    }
-                  }}
-                >
-                  <Tooltip permanent direction="right" className="font-mono text-[9px] font-bold bg-[#0d1117cc] border border-border text-foreground px-1.5 py-0.5 rounded">
-                    <span>{inc.id}: {inc.type}</span>
-                  </Tooltip>
-                </Marker>
-              );
-            })}
 
             {/* Render dynamic interactive elements (Cameras, Gates, stationary guards) */}
             {filteredMarkers.map((marker) => {
@@ -783,19 +685,13 @@ export default function PTBMapCanvas({
               const isSelected = activeTabId === marker.id;
 
               let color = "#4CC3FF";
-              if (marker.status === "alert") color = "#FF3D3D";
-              else if (marker.type === "guard") color = "#FFB700";
+              if (marker.type === "guard") color = "#FFB700";
               else if (marker.type === "gate") color = "#00FF9D";
 
               if (marker.type === "camera") {
                 const angle = marker.angle || 0;
                 const iconHtml = `
                   <div class="relative flex items-center justify-center w-14 h-14" style="transform: translate(-14px, -14px);">
-                    ${marker.status === "alert"
-                    ? `<div class="absolute rounded-full animate-ping opacity-35" style="background-color: ${color}; width: 42px; height: 42px;"></div>`
-                    : ""
-                  }
-                    
                     <div class="absolute rounded-full border transition-all ${isSelected ? "border-white" : ""}" 
                          style="background-color: #ffffff; border-color: ${isSelected ? "#ffffff" : color}; border-width: 2.5px; width: 44px; height: 44px; box-shadow: 0 0 15px ${color}60;">
                     </div>
@@ -848,33 +744,7 @@ export default function PTBMapCanvas({
                 );
               }
 
-              return (
-                <CircleMarker
-                  key={marker.id}
-                  center={coords}
-                  radius={12}
-                  pathOptions={{
-                    color: isSelected ? "#FFFFFF" : color,
-                    fillColor: marker.status === "alert" ? "#FF3D3D" : "#0D1117",
-                    fillOpacity: marker.status === "alert" ? 0.8 : 1,
-                    weight: isSelected ? 3 : 2,
-                  }}
-                  eventHandlers={{
-                    click: () => {
-                      setOpenTabs((prev) => {
-                        if (prev.some((t) => t.id === marker.id)) return prev;
-                        return [...prev, marker];
-                      });
-                      setActiveTabId(marker.id);
-                      setIsPlayingFeed(true);
-                      if (onSelectCamera) {
-                        onSelectCamera(marker.id);
-                      }
-                    },
-                  }}
-                >
-                </CircleMarker>
-              );
+              return null;
             })}
           </MapContainer>
 

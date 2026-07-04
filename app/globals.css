@@ -70,7 +70,9 @@
   --secondary: #DDE2EA;
   --secondary-foreground: #141820;
   --muted: #DDE2EA;
-  --muted-foreground: #5A6578;
+  --muted-foreground: #3F4956;
+  --pulse-glow-color-start: rgba(5, 150, 105, 0);
+  --pulse-glow-color-end: rgba(5, 150, 105, 0.15);
   --accent: #D4D9E4;
   --accent-foreground: #141820;
   --destructive: #DC2626;
@@ -125,6 +127,8 @@
   --sidebar-accent-foreground: #E6EDF3;
   --sidebar-border: #30363D;
   --sidebar-ring: #00FF9D;
+  --pulse-glow-color-start: rgba(0, 255, 157, 0);
+  --pulse-glow-color-end: rgba(0, 255, 157, 0.25);
 }
 
 /* ── Light mode tactical accent overrides ── */
@@ -137,6 +141,128 @@
   --color-tactical-cyan-dim: #0369A118;
   --color-tactical-amber-dim: #B4530918;
   --color-tactical-red-dim: #B91C1C18;
+  --muted-foreground: #3F4956;
+}
+
+/* Soften shadcn primary default buttons in light mode */
+.light [data-slot="button"][data-variant="default"] {
+  background-color: #C2E9D9 !important;
+  color: #064E3B !important;
+}
+.light [data-slot="button"][data-variant="default"]:hover {
+  background-color: #A7DDC5 !important;
+  color: #064E3B !important;
+}
+
+/* Soften custom tactical button utility classes in light mode */
+.light .bg-tactical-green {
+  background-color: #C2E9D9 !important;
+  color: #064E3B !important;
+}
+.light .bg-tactical-green:hover,
+.light .hover\:bg-tactical-green\/90:hover {
+  background-color: #A7DDC5 !important;
+  color: #064E3B !important;
+}
+
+.light .bg-tactical-cyan {
+  background-color: #C4E8FD !important;
+  color: #0369A1 !important;
+}
+.light .bg-tactical-cyan:hover,
+.light .hover\:bg-tactical-cyan\/90:hover {
+  background-color: #99D5FC !important;
+  color: #0369A1 !important;
+}
+
+.light .bg-tactical-amber {
+  background-color: #FDE68A !important;
+  color: #78350F !important;
+}
+.light .bg-tactical-amber:hover,
+.light .hover\:bg-tactical-amber\/90:hover {
+  background-color: #FCD34D !important;
+  color: #78350F !important;
+}
+
+.light .bg-tactical-red {
+  background-color: #FCD3D3 !important;
+  color: #991B1B !important;
+}
+.light .bg-tactical-red:hover,
+.light .hover\:bg-tactical-red\/90:hover {
+  background-color: #FCA5A5 !important;
+  color: #991B1B !important;
+}
+
+/* Soften hardcoded purple/lavender elements and buttons in light mode */
+.light .bg-\[\#A78BFA\] {
+  background-color: #DDD6FE !important;
+  color: #5B21B6 !important;
+}
+.light .bg-\[\#A78BFA\]:hover,
+.light .hover\:bg-\[\#A78BFA\]\/90:hover {
+  background-color: #C7D2FE !important;
+  color: #5B21B6 !important;
+}
+.light .bg-\[\#A78BFA\]\/15,
+.light .bg-\[\#A78BFA\]\/20,
+.light .bg-\[\#A78BFA\]\/10 {
+  background-color: #EDE9FE !important;
+}
+.light .text-\[\#A78BFA\] {
+  color: #6D28D9 !important;
+}
+.light .border-\[\#A78BFA\]\/30,
+.light .border-\[\#A78BFA\]\/40 {
+  border-color: #DDD6FE !important;
+}
+
+/* Custom header button & badge overrides for eye comfort in light mode */
+.light .bg-tactical-cyan\/10 {
+  background-color: #C4E8FD !important;
+  color: #0369A1 !important;
+  border-color: #99D5FC !important;
+}
+.light .bg-tactical-cyan\/10:hover,
+.light .hover\:bg-tactical-cyan\/20:hover {
+  background-color: #99D5FC !important;
+  color: #0369A1 !important;
+}
+.light .bg-tactical-green-dim {
+  background-color: #C2E9D9 !important;
+  border-color: #A7DDC5 !important;
+  color: #064E3B !important;
+}
+.light .blink.bg-tactical-green {
+  background-color: #047857 !important; /* Keep status dot dark green for contrast */
+}
+
+/* Custom opacity toggle buttons in modals / tables */
+.light .bg-tactical-green\/15 {
+  background-color: #C2E9D9 !important;
+  color: #064E3B !important;
+  border-color: #A7DDC5 !important;
+}
+.light .bg-tactical-amber\/15 {
+  background-color: #FDE68A !important;
+  color: #78350F !important;
+  border-color: #FCD34D !important;
+}
+.light .bg-tactical-red\/15 {
+  background-color: #FCD3D3 !important;
+  color: #991B1B !important;
+  border-color: #FCA5A5 !important;
+}
+.light .bg-tactical-cyan\/15 {
+  background-color: #C4E8FD !important;
+  color: #0369A1 !important;
+  border-color: #99D5FC !important;
+}
+
+/* Strip custom neon glowing box-shadows in light mode */
+.light [class*="shadow-["] {
+  box-shadow: none !important;
 }
 
 @layer base {
@@ -184,8 +310,8 @@
 
 /* ── Pulse Glow ── */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 #00FF9D00; }
-  50% { box-shadow: 0 0 20px 4px #00FF9D33; }
+  0%, 100% { box-shadow: 0 0 0 0 var(--pulse-glow-color-start); }
+  50% { box-shadow: 0 0 20px 4px var(--pulse-glow-color-end); }
 }
 
 .pulse-glow {
