@@ -85,7 +85,7 @@ interface SecurityEvent {
   confidence: number;
   time: string;
   timestamp: string;
-  icon: React.ElementType;
+  icon: typeof Users;
   description: string;
   action: string;
   video: string;
@@ -745,23 +745,6 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                           ? "Boarding backlog for Turkish Airlines flight TK-711 to Istanbul (IST). Departure processing is delayed due to high passenger volume, causing crowd buildup at checkpoints."
                           : "Processing bottleneck for Turkish Airlines flight TK-711 to Istanbul (IST). Security clearance delays at immigration counters are backing up into the main concourse area, requiring additional lane activation."
                         }
-                      </p>
-                    </div>
-                  </div>
-                ) : incident.kind === "unattended_baggage" && incident.detail ? (
-                  <div className="space-y-3 font-mono text-xs">
-                    <div>
-                      <span className="block text-[9px] text-muted-foreground tracking-wider uppercase mb-1">Baggage Details</span>
-                      <ul className="list-disc pl-4 space-y-1 text-foreground/90">
-                        <li>Description: <span className="text-foreground font-bold">{incident.detail.bagDesc}</span></li>
-                        <li>Abandoned Time: <span className="text-tactical-red font-bold">{incident.detail.abandonedTime}</span></li>
-                        <li>Location Spot: <span className="text-foreground font-bold">{incident.detail.lastLocation}</span></li>
-                      </ul>
-                    </div>
-                    <div>
-                      <span className="block text-[9px] text-muted-foreground tracking-wider uppercase mb-1">Recommended Response Action</span>
-                      <p className="text-tactical-red bg-tactical-red/10 border border-tactical-red/20 rounded p-2.5 leading-relaxed font-mono">
-                        {incident.detail.remedialAction}
                       </p>
                     </div>
                   </div>

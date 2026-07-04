@@ -41,7 +41,7 @@ const CAMERA_FEEDS = [
 ];
 
 const CAMERA_GROUPS = [
-  { id: "all", name: "All Cameras", zones: [] },
+  { id: "all", name: "All Cameras", zones: [] as string[] },
 ];
 
 type EventLevel = "critical" | "high" | "medium" | "low";
