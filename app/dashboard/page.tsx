@@ -223,7 +223,20 @@ const events: SecurityEvent[] = [
     icon: Eye,
     description: "Face Detection module active. Analyzing passenger flows and profiling at the airplane exit corridor.",
     action: "Verify boarding records and monitor exit flow.",
-    video: "/videos/face+_detection_airplane_Exit.mp4",
+  },
+  {
+    id: "EVT-010",
+    title: "Unattended Baggage Alert",
+    location: "L1 Arrivals Hall Carousel 4",
+    camera: "CAM-108",
+    level: "critical",
+    confidence: 95,
+    time: "14:15",
+    timestamp: "06/03/2026, 14:15:22",
+    icon: Luggage,
+    description: "CCTV object analytics flagged unclaimed luggage left unattended near Carousel 4. Subject custody lost for over 8 minutes.",
+    action: "Isolate immediate zone. Dispatch terminal security unit for manual check.",
+    video: "/videos/bag_count_output baggeges.mp4",
   },
 ];
 
@@ -298,6 +311,44 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
   const [showFlightBoard, setShowFlightBoard] = useState(false);
   const [activeFlightTab, setActiveFlightTab] = useState<"arrivals" | "departures">("arrivals");
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+
+  // States for Event 203 custom tripwire positioning and counting
+  const [evt203Count, setEvt203Count] = useState(46);
+  const [evt203LastCrossed, setEvt203LastCrossed] = useState(false);
+
+  // States for Unattended Baggage dynamic timer
+  const [unattendedBagTime, setUnattendedBagTime] = useState(492); // starts at 8 min 12 sec (492s)
+
+  useEffect(() => {
+    if (incident.id !== "EVT-203") return;
+    setEvt203Count(46); // Reset to 46 when modal opens
+    const id = setInterval(() => {
+      setEvt203Count((prev) => prev + 1);
+      setEvt203LastCrossed(true);
+      setTimeout(() => setEvt203LastCrossed(false), 700);
+    }, 5000);
+    return () => clearInterval(id);
+  }, [incident.id]);
+
+  useEffect(() => {
+    if (incident.id === "EVT-208" || incident.id === "EVT-010") {
+      setUnattendedBagTime(492); // 8 min 12 sec
+    } else if (incident.id === "EVT-207") {
+      setUnattendedBagTime(342); // 5 min 42 sec
+    } else {
+      return;
+    }
+    const id = setInterval(() => {
+      setUnattendedBagTime((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [incident.id]);
+
+  const formatUnattendedTime = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m} min ${s} sec`;
+  };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -398,7 +449,7 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                       </div>
                       <div className="bg-card border border-border/40 p-2.5 rounded">
                         <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">ABANDONED TIME</span>
-                        <span className="font-bold text-tactical-red text-xs tracking-widest">{incident.detail?.abandonedTime}</span>
+                        <span className="font-bold text-tactical-red text-xs tracking-widest">{formatUnattendedTime(unattendedBagTime)}</span>
                       </div>
                       <div className="bg-card border border-border/40 p-2.5 rounded">
                         <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">LAST KNOWN LOCATION</span>
@@ -474,10 +525,19 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                       </div>
                     </>
                   ) : incident.kind === "unattended_baggage" ? (
-                    <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black/45 flex flex-col items-center justify-center text-center p-4 shadow-md select-none">
-                      <Luggage className="h-10 w-10 text-tactical-red animate-bounce mb-2" />
-                      <span className="text-[8px] font-bold text-tactical-red uppercase tracking-wider">UNATTENDED BAGGAGE</span>
-                      <span className="text-[6px] text-muted-foreground mt-0.5">CCTV ANALYTICS ALERT</span>
+                    <div 
+                      onClick={() => setZoomedImage(incident.detail?.bagImage || "/unattended_blue_bag.png")}
+                      className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black group shadow-md cursor-zoom-in hover:border-tactical-red/60 transition-all duration-300"
+                    >
+                      <img 
+                        src={incident.detail?.bagImage || "/unattended_blue_bag.png"} 
+                        alt="Unattended Baggage" 
+                        className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                      <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-tactical-red text-white text-[7px] font-bold font-mono tracking-widest animate-pulse">
+                        FLAGGED: {incident.id === "EVT-207" ? "5 MINS" : "8 MINS"}
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -707,7 +767,7 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                       <>
                         <div className="bg-card border border-border/40 p-2.5 rounded">
                           <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">PEOPLE COUNT</span>
-                          <span className="font-bold text-tactical-amber text-sm">{incident.detail.peopleCount} / Limit {incident.detail.threshold}</span>
+                          <span className="font-bold text-tactical-amber text-sm">{incident.id === "EVT-203" ? evt203Count : incident.detail.peopleCount} / Limit {incident.detail.threshold}</span>
                         </div>
                         <div className="bg-card border border-border/40 p-2.5 rounded">
                           <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">CONGESTION TARGET</span>
@@ -721,6 +781,26 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                         <span className="font-bold text-foreground">{incident.detail.waitTime}</span>
                       </div>
                     )}
+                    {incident.detail.bagDesc && (
+                      <>
+                        <div className="bg-card border border-border/40 p-2.5 rounded">
+                          <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">BAGGAGE DESCRIPTION</span>
+                          <span className="font-bold text-tactical-red text-xs">{incident.detail.bagDesc}</span>
+                        </div>
+                        <div className="bg-card border border-border/40 p-2.5 rounded">
+                          <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">ABANDONED TIME</span>
+                          <span className="font-bold text-tactical-amber text-xs">{formatUnattendedTime(unattendedBagTime)}</span>
+                        </div>
+                        <div className="bg-card border border-border/40 p-2.5 rounded">
+                          <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">THERMAL SIGNATURE</span>
+                          <span className="font-bold text-foreground text-xs">{incident.detail.thermalSignature}</span>
+                        </div>
+                        <div className="bg-card border border-border/40 p-2.5 rounded col-span-2">
+                          <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">REMEDIAL ACTION</span>
+                          <span className="font-bold text-tactical-cyan text-[10px] leading-relaxed">{incident.detail.remedialAction}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -733,7 +813,7 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                     <div>
                       <span className="block text-[9px] text-muted-foreground tracking-wider uppercase mb-1">Queue Diagnostics</span>
                       <ul className="list-disc pl-4 space-y-1 text-foreground/90">
-                        <li>Counted People: <span className="text-tactical-amber font-bold">{incident.detail.peopleCount} pax</span> (Above safety limit of {incident.detail.threshold})</li>
+                        <li>Counted People: <span className="text-tactical-amber font-bold">{incident.id === "EVT-203" ? evt203Count : incident.detail.peopleCount} pax</span> (Above safety limit of {incident.detail.threshold})</li>
                         <li>Current Wait Time: <span className="text-tactical-cyan font-bold">{incident.detail.waitTime}</span></li>
                         <li>Affected Counter Area: <span className="text-foreground font-bold">{incident.detail.counter}</span></li>
                       </ul>
@@ -746,6 +826,18 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                           : "Processing bottleneck for Turkish Airlines flight TK-711 to Istanbul (IST). Security clearance delays at immigration counters are backing up into the main concourse area, requiring additional lane activation."
                         }
                       </p>
+                    </div>
+                  </div>
+                ) : incident.kind === "unattended_baggage" && incident.detail ? (
+                  <div className="space-y-3 font-mono text-xs">
+                    <div>
+                      <span className="block text-[9px] text-muted-foreground tracking-wider uppercase mb-1">Baggage Diagnostics</span>
+                      <ul className="list-disc pl-4 space-y-1 text-foreground/90">
+                        <li>Description: <span className="text-tactical-red font-bold">{incident.detail.bagDesc}</span></li>
+                        <li>Abandoned Duration: <span className="text-tactical-amber font-bold">{formatUnattendedTime(unattendedBagTime)}</span></li>
+                        <li>Alert Trigger: <span className="text-foreground/95">{incident.detail.alertTrigger}</span></li>
+                        <li>Threat Level: <span className="text-tactical-red font-bold">{incident.detail.threatLevel}</span></li>
+                      </ul>
                     </div>
                   </div>
                 ) : (
@@ -804,8 +896,8 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
 
               {/* Live Video Stream */}
               {incident.videoSrc && (
-                <div className="space-y-2">
-                  <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">RETRIEVED VIDEO CAPTURE</span>
+                <div className="space-y-3">
+                  <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold text-left">RETRIEVED VIDEO CAPTURE</span>
                   <div className="rounded-xl overflow-hidden border border-border/40 relative bg-zinc-900" style={{ aspectRatio: "16/9" }}>
                     <video
                       key={incident.videoSrc}
@@ -816,6 +908,29 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                       playsInline
                       className="absolute inset-0 w-full h-full object-cover"
                     />
+                    
+                    {/* Tripwire line overlay for Event 203 */}
+                    {incident.id === "EVT-203" && (
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <line
+                          x1="60" y1="38"
+                          x2="67" y2="45"
+                          stroke="#00FF9D"
+                          strokeWidth="1.2"
+                          strokeDasharray={evt203LastCrossed ? "none" : "3 1.5"}
+                          strokeOpacity={evt203LastCrossed ? "1" : "0.85"}
+                        />
+                        {evt203LastCrossed && (
+                          <line
+                            x1="60" y1="38"
+                            x2="67" y2="45"
+                            stroke="#00FF9D" strokeWidth="2.5" strokeOpacity="0.65"
+                          />
+                        )}
+                        <text x="60" y="35" fill="#00FF9D" fontSize="3.5" fontFamily="monospace" fontWeight="bold">TRIPWIRE LINE</text>
+                      </svg>
+                    )}
+
                     <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[8px] font-bold tracking-widest z-10">
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                       FEED RECORD
@@ -823,6 +938,16 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                     <div className="absolute bottom-3 left-3 bg-black/60 border border-white/10 px-2 py-1 rounded backdrop-blur z-10 text-[9px]">
                       {incident.camera}
                     </div>
+
+                    {/* Live counter overlay for EVT-203 */}
+                    {incident.id === "EVT-203" && (
+                      <div className={`absolute top-3 right-3 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-mono font-bold transition-all ${
+                        evt203LastCrossed ? "bg-tactical-green text-black scale-105" : "bg-black/60 border border-tactical-green/40 text-tactical-green"
+                      }`}>
+                        <Users className="h-2.5 w-2.5" />
+                        COUNT: {evt203Count}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

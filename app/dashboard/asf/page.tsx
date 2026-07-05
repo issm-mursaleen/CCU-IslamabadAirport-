@@ -118,6 +118,44 @@ export default function ASFPage() {
   const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [zoneFilter, setZoneFilter] = useState<"all" | Zone>("all");
+
+  // States for Event 203 custom tripwire positioning and counting
+  const [evt203Count, setEvt203Count] = useState(46);
+  const [evt203LastCrossed, setEvt203LastCrossed] = useState(false);
+
+  // States for Unattended Baggage dynamic timer
+  const [unattendedBagTime, setUnattendedBagTime] = useState(492); // starts at 8 min 12 sec (492s)
+
+  useEffect(() => {
+    if (selectedIncident !== "EVT-203") return;
+    setEvt203Count(46); // Start at 46 when selected
+    const id = setInterval(() => {
+      setEvt203Count((prev) => prev + 1);
+      setEvt203LastCrossed(true);
+      setTimeout(() => setEvt203LastCrossed(false), 700);
+    }, 5000);
+    return () => clearInterval(id);
+  }, [selectedIncident]);
+
+  useEffect(() => {
+    if (selectedIncident === "EVT-208") {
+      setUnattendedBagTime(492); // 8 min 12 sec
+    } else if (selectedIncident === "EVT-207") {
+      setUnattendedBagTime(342); // 5 min 42 sec
+    } else {
+      return;
+    }
+    const id = setInterval(() => {
+      setUnattendedBagTime((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [selectedIncident]);
+
+  const formatUnattendedTime = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m} min ${s} sec`;
+  };
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showResolution, setShowResolution] = useState(false);
   const [showFeedDetail, setShowFeedDetail] = useState(false);
@@ -611,7 +649,7 @@ export default function ASFPage() {
                   </div>
                 </div>
                 <div className="p-4 space-y-3.5 overflow-y-auto flex-1 font-mono text-xs">
-                  {activeIncident.kind === "stolen_vehicle" || activeIncident.id === "EVT-205" || activeIncident.id === "EVT-206" || activeIncident.kind === "queue_congestion" ? (
+                  {activeIncident.kind === "stolen_vehicle" || activeIncident.id === "EVT-205" || activeIncident.id === "EVT-206" || activeIncident.kind === "queue_congestion" || activeIncident.kind === "unattended_baggage" ? (
                     <>
                       {/* Top Row: Split 50/50 */}
                       <div className={`grid grid-cols-1 ${activeIncident.kind === "queue_congestion" ? "" : "md:grid-cols-[1fr_95px]"} gap-4`}>
@@ -663,7 +701,7 @@ export default function ASFPage() {
                             <div className="grid grid-cols-3 gap-2 text-[10px] font-mono">
                               <div className="bg-card border border-border/40 p-2 rounded">
                                 <span className="text-muted-foreground block text-[8px] uppercase">PEOPLE COUNT</span>
-                                <span className="text-tactical-amber font-bold block">{detail?.peopleCount} / Limit {detail?.threshold}</span>
+                                <span className="text-tactical-amber font-bold block">{activeIncident.id === "EVT-203" ? evt203Count : detail?.peopleCount} / Limit {detail?.threshold}</span>
                               </div>
                               <div className="bg-card border border-border/40 p-2 rounded">
                                 <span className="text-muted-foreground block text-[8px] uppercase">WAIT TIME</span>
@@ -672,6 +710,17 @@ export default function ASFPage() {
                               <div className="bg-card border border-border/40 p-2 rounded">
                                 <span className="text-muted-foreground block text-[8px] uppercase">COUNTER AREA</span>
                                 <span className="text-foreground font-bold block truncate">{detail?.counter}</span>
+                              </div>
+                            </div>
+                          ) : activeIncident.kind === "unattended_baggage" ? (
+                            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                              <div className="bg-card border border-border/40 p-2 rounded">
+                                <span className="text-muted-foreground block text-[8px] uppercase">BAGGAGE DESCRIPTION</span>
+                                <span className="text-foreground font-bold truncate block">{detail?.bagDesc}</span>
+                              </div>
+                              <div className="bg-card border border-border/40 p-2 rounded">
+                                <span className="text-muted-foreground block text-[8px] uppercase">ABANDONED TIME</span>
+                                <span className="text-tactical-red font-bold tracking-widest">{formatUnattendedTime(unattendedBagTime)}</span>
                               </div>
                             </div>
                           ) : (
@@ -724,10 +773,25 @@ export default function ASFPage() {
                                    </div>
                                  </div>
                                </>
+                             ) : activeIncident.kind === "unattended_baggage" ? (
+                               <div
+                                 onClick={() => setZoomedImage(detail?.bagImage || "/unattended_blue_bag.png")}
+                                 className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black group shadow-md cursor-zoom-in hover:border-tactical-red/60 transition-all duration-300"
+                               >
+                                 <img
+                                   src={detail?.bagImage || "/unattended_blue_bag.png"}
+                                   alt="Unattended Baggage"
+                                   className="w-full h-full object-cover opacity-90"
+                                 />
+                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                                 <div className="absolute top-1.5 right-1.5 px-1 py-0.5 rounded bg-tactical-red text-white text-[5px] font-bold font-mono tracking-widest animate-pulse">
+                                   FLAGGED
+                                 </div>
+                               </div>
                              ) : (
                                <>
                                  {/* Vehicle Image */}
-                                 <div 
+                                 <div
                                    onClick={() => setZoomedImage("/flagged_vehicle.png")}
                                    className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black group shadow-md cursor-zoom-in hover:border-tactical-red/60 transition-all duration-300"
                                  >
@@ -831,59 +895,95 @@ export default function ASFPage() {
 
                       {/* Live camera feed */}
                       {activeIncident.videoSrc && (
-                        <div
-                          onClick={() => setShowFeedDetail(true)}
-                          className="relative w-full aspect-video rounded-lg overflow-hidden border border-tactical-red/30 bg-black group shadow-[0_0_15px_rgba(239,68,68,0.1)] cursor-pointer hover:border-tactical-red/60 transition-colors"
-                        >
-                          <video
-                            key={activeIncident.videoSrc}
-                            src={activeIncident.videoSrc}
-                            autoPlay loop muted playsInline
-                            className="w-full h-full object-cover opacity-90 group-hover:scale-102 transition-transform duration-700"
-                          />
-                          <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(rgba(0,255,157,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
-                          <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[8px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-tactical-red blink" />
-                            {activeIncident.camera}
-                          </div>
-                          <div className="absolute top-2 right-2 z-10 p-1 rounded bg-black/60 border border-white/10 text-white/70">
-                            <Maximize2 className="h-3 w-3" />
-                          </div>
-                          <div className="absolute bottom-2 left-2 right-2 z-10 p-2 rounded bg-black/75 border border-tactical-red/30 text-[9px] font-mono text-white flex flex-col gap-0.5">
-                            {activeIncident.kind === "queue_congestion" ? (
-                              <>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">PAX COUNT:</span>
-                                  <span className="text-tactical-amber font-bold tracking-wider">
-                                    {detail?.peopleCount} / {detail?.threshold} THRESHOLD
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">CONGESTION TARGET:</span>
-                                  <span className="text-tactical-amber font-bold">Istanbul Flight (TK-711)</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">EST. WAIT:</span>
-                                  <span className="text-tactical-amber font-bold">{detail?.waitTime}</span>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">DETECTED:</span>
-                                  <span className="text-tactical-red font-bold tracking-widest">
-                                    {activeIncident.kind === "flagged_person" 
-                                      ? `${detail?.personName} (${detail?.personId})` 
-                                      : `${detail?.plate} (STOLEN)`
-                                    }
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">CONFIDENCE:</span>
-                                  <span className="text-tactical-red font-bold">{detail?.confidence}% MATCH</span>
-                                </div>
-                              </>
+                        <div className="space-y-3">
+                          <div
+                            onClick={() => setShowFeedDetail(true)}
+                            className="relative w-full aspect-video rounded-lg overflow-hidden border border-tactical-red/30 bg-black group shadow-[0_0_15px_rgba(239,68,68,0.1)] cursor-pointer hover:border-tactical-red/60 transition-colors"
+                          >
+                            <video
+                              key={activeIncident.videoSrc}
+                              src={activeIncident.videoSrc}
+                              autoPlay loop muted playsInline
+                              className="w-full h-full object-cover opacity-90 group-hover:scale-102 transition-transform duration-700"
+                            />
+                            
+                            {/* Tripwire line overlay for Event 203 */}
+                            {activeIncident.id === "EVT-203" && (
+                              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                <line
+                                  x1="60" y1="38"
+                                  x2="67" y2="45"
+                                  stroke="#00FF9D"
+                                  strokeWidth="1.2"
+                                  strokeDasharray={evt203LastCrossed ? "none" : "3 1.5"}
+                                  strokeOpacity={evt203LastCrossed ? "1" : "0.85"}
+                                />
+                                {evt203LastCrossed && (
+                                  <line
+                                    x1="60" y1="38"
+                                    x2="67" y2="45"
+                                    stroke="#00FF9D" strokeWidth="2.5" strokeOpacity="0.65"
+                                  />
+                                )}
+                                <text x="60" y="35" fill="#00FF9D" fontSize="3.5" fontFamily="monospace" fontWeight="bold">TRIPWIRE LINE</text>
+                              </svg>
                             )}
+
+                            <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(rgba(0,255,157,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
+                            <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[8px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-tactical-red blink" />
+                              {activeIncident.camera}
+                            </div>
+                            <div className="absolute top-2 right-2 z-10 p-1 rounded bg-black/60 border border-white/10 text-white/70">
+                              <Maximize2 className="h-3 w-3" />
+                            </div>
+                            
+                            {/* Live counter overlay for EVT-203 */}
+                            {activeIncident.id === "EVT-203" && (
+                              <div className={`absolute top-2 right-10 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-mono font-bold transition-all ${
+                                evt203LastCrossed ? "bg-tactical-green text-black scale-105" : "bg-black/60 border border-tactical-green/40 text-tactical-green"
+                              }`}>
+                                <Users className="h-2.5 w-2.5" />
+                                COUNT: {evt203Count}
+                              </div>
+                            )}
+
+                            <div className="absolute bottom-2 left-2 right-2 z-10 p-2 rounded bg-black/75 border border-tactical-red/30 text-[9px] font-mono text-white flex flex-col gap-0.5 pointer-events-none">
+                              {activeIncident.kind === "queue_congestion" ? (
+                                <>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">PAX COUNT:</span>
+                                    <span className="text-tactical-amber font-bold tracking-wider">
+                                      {activeIncident.id === "EVT-203" ? evt203Count : detail?.peopleCount} / {detail?.threshold} THRESHOLD
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">CONGESTION TARGET:</span>
+                                    <span className="text-tactical-amber font-bold">Istanbul Flight (TK-711)</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">EST. WAIT:</span>
+                                    <span className="text-tactical-amber font-bold">{detail?.waitTime}</span>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">DETECTED:</span>
+                                    <span className="text-tactical-red font-bold tracking-widest">
+                                      {activeIncident.kind === "flagged_person" 
+                                        ? `${detail?.personName} (${detail?.personId})` 
+                                        : `${detail?.plate} (STOLEN)`
+                                      }
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">CONFIDENCE:</span>
+                                    <span className="text-tactical-red font-bold">{detail?.confidence}% MATCH</span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -894,7 +994,7 @@ export default function ASFPage() {
                           <div>
                             <span className="block text-[9px] text-muted-foreground tracking-wider uppercase mb-1">Queue Diagnostics</span>
                             <ul className="list-disc pl-4 space-y-1 text-foreground/90">
-                              <li>Counted People: <span className="text-tactical-amber font-bold">{detail.peopleCount} pax</span> (Above safety limit of {detail.threshold})</li>
+                              <li>Counted People: <span className="text-tactical-amber font-bold">{activeIncident.id === "EVT-203" ? evt203Count : detail.peopleCount} pax</span> (Above safety limit of {detail.threshold})</li>
                               <li>Current Wait Time: <span className="text-tactical-cyan font-bold">{detail.waitTime}</span></li>
                               <li>Affected Counters: <span className="text-foreground font-bold">{detail.counter}</span></li>
                             </ul>
@@ -1051,6 +1151,33 @@ export default function ASFPage() {
                                   <p className="text-foreground"><span className="text-muted-foreground">Passport:</span> {detail.passport} · {detail.nationality}</p>
                                   <p className="text-foreground"><span className="text-muted-foreground">Flight:</span> {detail.flight}</p>
                                   <p className="text-foreground"><span className="text-muted-foreground">Threat:</span> <span className="text-tactical-amber font-bold">{detail.threatLevel}</span></p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Unattended baggage — CCTV surveillance profile */}
+                          {activeIncident.kind === "unattended_baggage" && (
+                            <div className="rounded-lg bg-tactical-red/5 border border-tactical-red/25 overflow-hidden">
+                              <div className="flex items-center gap-1.5 px-3 py-2 border-b border-tactical-red/20 bg-tactical-red/10">
+                                <Luggage className="h-3.5 w-3.5 text-tactical-red animate-pulse" />
+                                <span className="font-mono text-[9px] font-bold text-tactical-red tracking-wider uppercase">Unattended Baggage Alert</span>
+                                <span className="ml-auto font-mono text-[8px] text-tactical-red font-bold">{detail.confidence}% DETECTED</span>
+                              </div>
+                              <div className="p-3 flex gap-3">
+                                <div 
+                                  onClick={() => setZoomedImage(detail.bagImage || "/unattended_blue_bag.png")}
+                                  className="h-12 w-12 rounded bg-secondary border border-border flex items-center justify-center shrink-0 overflow-hidden cursor-zoom-in hover:border-tactical-red transition-colors"
+                                >
+                                  <img src={detail.bagImage || "/unattended_blue_bag.png"} className="w-full h-full object-cover" alt="Suitcase" />
+                                </div>
+                                <div className="text-[10px] font-mono space-y-0.5 min-w-0 text-left">
+                                  <p className="text-foreground font-bold">Item: <span className="text-tactical-red font-bold">{detail.bagDesc}</span></p>
+                                  <p className="text-foreground"><span className="text-muted-foreground">Status:</span> <span className="text-tactical-red font-bold animate-pulse">FLAGGED (8 MINUTES)</span></p>
+                                  <p className="text-foreground"><span className="text-muted-foreground">Abandoned for:</span> <span className="text-tactical-amber font-bold">{formatUnattendedTime(unattendedBagTime)}</span></p>
+                                  <p className="text-foreground"><span className="text-muted-foreground">Thermal Signature:</span> {detail.thermalSignature}</p>
+                                  <p className="text-foreground"><span className="text-muted-foreground">Threat Level:</span> <span className="text-tactical-red font-bold">{detail.threatLevel}</span></p>
+                                  <p className="text-muted-foreground leading-tight mt-0.5">{detail.alertTrigger}</p>
                                 </div>
                               </div>
                             </div>
@@ -1668,7 +1795,7 @@ export default function ASFPage() {
                       <div>
                         <span className="block text-[9px] text-muted-foreground tracking-wider uppercase mb-1">Queue Diagnostics</span>
                         <ul className="list-disc pl-4 space-y-1 text-foreground/90">
-                          <li>Counted People: <span className="text-tactical-amber font-bold">{detail.peopleCount} pax</span> (Above safety limit of {detail.threshold})</li>
+                          <li>Counted People: <span className="text-tactical-amber font-bold">{activeIncident.id === "EVT-203" ? evt203Count : detail.peopleCount} pax</span> (Above safety limit of {detail.threshold})</li>
                           <li>Current Wait Time: <span className="text-tactical-cyan font-bold">{detail.waitTime}</span></li>
                           <li>Affected Counters: <span className="text-foreground font-bold">{detail.counter}</span></li>
                         </ul>
@@ -1681,6 +1808,18 @@ export default function ASFPage() {
                             : "Processing bottleneck for Turkish Airlines flight TK-711 to Istanbul (IST). Security clearance delays at immigration counters are backing up into the main concourse area, requiring additional lane activation."
                           }
                         </p>
+                      </div>
+                    </div>
+                  ) : activeIncident.kind === "unattended_baggage" && detail ? (
+                    <div className="space-y-3 font-mono text-xs text-left">
+                      <div>
+                        <span className="block text-[9px] text-muted-foreground tracking-wider uppercase mb-1">Baggage Diagnostics</span>
+                        <ul className="list-disc pl-4 space-y-1 text-foreground/90">
+                          <li>Description: <span className="text-tactical-red font-bold">{detail.bagDesc}</span></li>
+                          <li>Abandoned Duration: <span className="text-tactical-amber font-bold">{formatUnattendedTime(unattendedBagTime)}</span></li>
+                          <li>Alert Trigger: <span className="text-foreground/95">{detail.alertTrigger}</span></li>
+                          <li>Threat Level: <span className="text-tactical-red font-bold">{detail.threatLevel}</span></li>
+                        </ul>
                       </div>
                     </div>
                   ) : (
@@ -2337,7 +2476,7 @@ export default function ASFPage() {
 
                   <div className="bg-accent/30 rounded px-2.5 py-1.5">
                     <span className="text-muted-foreground block text-[8px] uppercase tracking-wider">PASSENGER VOLUMES</span>
-                    <span className="text-tactical-red font-bold block">{detail.peopleCount} pax (Safety limit {detail.threshold})</span>
+                    <span className="text-tactical-red font-bold block">{activeIncident.id === "EVT-203" ? evt203Count : detail.peopleCount} pax (Safety limit {detail.threshold})</span>
                   </div>
 
                   <div className="bg-accent/30 rounded px-2.5 py-1.5">
@@ -2389,10 +2528,43 @@ export default function ASFPage() {
                   autoPlay loop muted playsInline
                   className="w-full h-full object-cover"
                 />
+                
+                 {/* Tripwire line overlay for Event 203 */}
+                {activeIncident.id === "EVT-203" && (
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <line
+                      x1="60" y1="38"
+                      x2="67" y2="45"
+                      stroke="#00FF9D"
+                      strokeWidth="1.2"
+                      strokeDasharray={evt203LastCrossed ? "none" : "3 1.5"}
+                      strokeOpacity={evt203LastCrossed ? "1" : "0.85"}
+                    />
+                    {evt203LastCrossed && (
+                      <line
+                        x1="60" y1="38"
+                        x2="67" y2="45"
+                        stroke="#00FF9D" strokeWidth="2.5" strokeOpacity="0.65"
+                      />
+                    )}
+                    <text x="60" y="35" fill="#00FF9D" fontSize="3.5" fontFamily="monospace" fontWeight="bold">TRIPWIRE LINE</text>
+                  </svg>
+                )}
+
                 <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[10px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-tactical-red blink" />
                   {activeIncident.camera} — LIVE
                 </div>
+
+                {/* Live counter overlay for EVT-203 */}
+                {activeIncident.id === "EVT-203" && (
+                  <div className={`absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded font-mono font-bold text-xs shadow-lg transition-all ${
+                    evt203LastCrossed ? "bg-tactical-green text-black scale-105" : "bg-black/70 border border-tactical-green/50 text-tactical-green"
+                  }`}>
+                    <Users className="h-3.5 w-3.5" />
+                    CROSSINGS: {evt203Count}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-xs font-mono">
@@ -2450,7 +2622,7 @@ export default function ASFPage() {
                   <>
                     <div className="bg-secondary/40 border border-border p-3 rounded-lg">
                       <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Passengers In Queue</span>
-                      <span className="font-bold text-tactical-amber">{detail.peopleCount} pax (limit {detail.threshold})</span>
+                      <span className="font-bold text-tactical-amber">{activeIncident.id === "EVT-203" ? evt203Count : detail.peopleCount} pax (limit {detail.threshold})</span>
                     </div>
                     <div className="bg-secondary/40 border border-border p-3 rounded-lg">
                       <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Estimated Wait</span>
@@ -2463,6 +2635,26 @@ export default function ASFPage() {
                     <div className="bg-secondary/40 border border-border p-3 rounded-lg col-span-2">
                       <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Location</span>
                       <span className="font-bold text-tactical-amber">{detail.counter}</span>
+                    </div>
+                  </>
+                )}
+                {activeIncident.kind === "unattended_baggage" && detail && (
+                  <>
+                    <div className="bg-secondary/40 border border-border p-3 rounded-lg">
+                      <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Item Description</span>
+                      <span className="font-bold text-tactical-red">{detail.bagDesc}</span>
+                    </div>
+                    <div className="bg-secondary/40 border border-border p-3 rounded-lg">
+                      <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Abandoned Duration</span>
+                      <span className="font-bold text-tactical-amber">{formatUnattendedTime(unattendedBagTime)}</span>
+                    </div>
+                    <div className="bg-secondary/40 border border-border p-3 rounded-lg col-span-2">
+                      <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Thermal Signature</span>
+                      <span className="font-bold text-foreground">{detail.thermalSignature} (Threat: {detail.threatLevel})</span>
+                    </div>
+                    <div className="bg-secondary/40 border border-border p-3 rounded-lg col-span-2">
+                      <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Remedial Directive</span>
+                      <span className="font-bold text-tactical-cyan">{detail.remedialAction}</span>
                     </div>
                   </>
                 )}

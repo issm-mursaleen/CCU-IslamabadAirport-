@@ -10,6 +10,7 @@ import {
   Radio,
   Video,
   Users,
+  Luggage,
 } from "lucide-react";
 
 // Load PTBMapCanvas dynamically to support Leaflet client-side rendering
@@ -133,6 +134,22 @@ const LIVE_EVENTS: LiveEvent[] = [
     icon: AlertTriangle,
     description: "Baggage Count tracker flagged a high volume of luggage accumulating on Carousel 4 with no handlers clearing the belt.",
     action: "Direct baggage handlers to clear the carousel belt conveyor immediately.",
+    video: "/videos/bag_count_output baggeges.mp4",
+  },
+  {
+    id: 5,
+    title: "Unattended Baggage Detected",
+    camId: "CAM-308",
+    location: "Zone B — Arrivals Baggage Claim",
+    cam: "CAM-308 • Baggage Claim",
+    time: "14:15",
+    timestamp: "06/03/2026, 14:15:22",
+    color: "text-tactical-red",
+    level: "critical",
+    confidence: 95,
+    icon: Luggage,
+    description: "CCTV object analytics flagged unclaimed luggage left unattended near Carousel 4. Subject custody lost for over 8 minutes.",
+    action: "Isolate immediate zone. Dispatch terminal security unit for manual check.",
     video: "/videos/bag_count_output baggeges.mp4",
   },
 ];

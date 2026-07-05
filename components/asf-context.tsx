@@ -50,6 +50,7 @@ export type EventDetail = {
   thermalSignature?: string;
   alertTrigger?: string;
   remedialAction?: string;
+  bagImage?: string;
 };
 
 export type Incident = {
@@ -242,7 +243,27 @@ export const seedIncidents: Incident[] = [
       thermalSignature: "Cold / No Threat heat signature",
       threatLevel: "HIGH",
       alertTrigger: "AI Object Abandonment Algorithm (CCTV)",
-      remedialAction: "Isolate immediate zone (10m radius). Deploy patrol team BRAVO-1 for manual inspection and K9 scan."
+      remedialAction: "Isolate immediate zone (10m radius). Deploy patrol team BRAVO-1 for manual inspection and K9 scan.",
+      bagImage: "/unattended_grey_suitcase.png"
+    }
+  },
+  {
+    id: "EVT-208", type: "UNATTENDED BAGGAGE", typeCode: "red", kind: "unattended_baggage",
+    description: "Unclaimed luggage left unattended near Carousel 4. Subject custody lost for over 8 minutes. CCTV object analytics triggered abandonment alert.",
+    site: "Zone B — Arrivals Baggage Claim", zone: "Zone B",
+    camera: "CAM-308 (Baggage Claim)", videoSrc: "/videos/bag_count_output baggeges.mp4",
+    lat: 33.5546, lng: 72.8315, reported: "14:11 PKT", requiredCap: "patrol",
+    status: "pending", assignedGroup: null,
+    detail: {
+      confidence: 95,
+      bagDesc: "Black Suitcase & Duffel Bag",
+      abandonedTime: "8 min 12 sec",
+      lastLocation: "Arrivals Baggage Claim, Carousel 4 Area",
+      thermalSignature: "Normal / No Heat Anomaly",
+      threatLevel: "MEDIUM",
+      alertTrigger: "AI Object Abandonment Algorithm (CCTV)",
+      remedialAction: "Dispatch nearest patrol force to secure the perimeter around Carousel 4 and inspect the items.",
+      bagImage: "/unattended_blue_bag.png"
     }
   },
 ];

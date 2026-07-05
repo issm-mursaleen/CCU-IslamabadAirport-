@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, TileLayer, CircleMarker, Marker, Polygon, Tooltip } from "react-leaflet";
@@ -193,8 +193,8 @@ const mockMarkers: InteractiveMarker[] = [
     name: "CAM-108 (L1 Arrivals Baggage Claim Carousel 4)",
     x: 44,
     y: 31,
-    status: "active",
-    details: "Baggage Count tracker operational. Monitoring carousel throughput.",
+    status: "alert",
+    details: "ALERT TRIGGERED: Unclaimed luggage left unattended near Carousel 4 for over 8 minutes.",
     videoUrl: "/videos/bag_count_output baggeges.mp4",
     angle: 225,
     lat: 33.5546,
@@ -409,6 +409,17 @@ export default function PTBMapCanvas({
   const [pushedToGate, setPushedToGate] = useState(false);
   const [unattendedSeconds, setUnattendedSeconds] = useState(0);
 
+  // People counter state — tracks crossing counts per camera
+  const COUNTER_CAMERAS = ["CAM-PTB-CONG", "CAM-PTB-LOIT", "CAM-PTB-BAG"];
+  const [crossingCounts, setCrossingCounts] = useState<Record<string, number>>({
+    "CAM-PTB-CONG": 46,
+    "CAM-PTB-LOIT": 15,
+    "CAM-PTB-BAG": 8,
+  });
+  const [lastCrossed, setLastCrossed] = useState<Record<string, boolean>>(
+    Object.fromEntries(COUNTER_CAMERAS.map((id) => [id, false]))
+  );
+
   // Unattended timer for RESPOND stage
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -421,6 +432,30 @@ export default function PTBMapCanvas({
     }
     return () => clearInterval(timer);
   }, [anprStage]);
+
+  // Auto-increment people counter for active camera if it is a counter camera
+  useEffect(() => {
+    if (!activeTabId || !COUNTER_CAMERAS.includes(activeTabId)) return;
+
+    // Reset CAM-PTB-CONG to 46 when visited so it starts counting from base
+    if (activeTabId === "CAM-PTB-CONG") {
+      setCrossingCounts((prev) => ({ ...prev, "CAM-PTB-CONG": 46 }));
+    }
+
+    // Increment at randomized interval between 3–6s
+    const delay = Math.floor(Math.random() * 3000) + 3000;
+    const intervalId = setInterval(() => {
+      setCrossingCounts((prev) => ({
+        ...prev,
+        [activeTabId]: prev[activeTabId] + 1,
+      }));
+      setLastCrossed((prev) => ({ ...prev, [activeTabId]: true }));
+      setTimeout(() => setLastCrossed((prev) => ({ ...prev, [activeTabId]: false })), 700);
+    }, delay);
+
+    return () => clearInterval(intervalId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTabId]);
 
   const handleLevelChange = (level: 1 | 2 | 3) => {
     if (onLevelChange) {
@@ -1137,6 +1172,42 @@ export default function PTBMapCanvas({
                             ))}
                           </div>
                         </div>
+                      ) : COUNTER_CAMERAS.includes(activeElement.id) ? (
+                        <div className="pt-2.5 space-y-4">
+                          <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase block mb-1.5">AI VISION MODEL STATUS</span>
+                          <div className="bg-secondary/35 border border-border/40 p-3 rounded-lg space-y-2 font-mono text-xs">
+                            <div className="flex justify-between items-center pb-1.5 border-b border-border/20">
+                              <span className="text-muted-foreground">MODEL ENGINE:</span>
+                              <span className="text-yellow-400 font-bold">YOLOv8x-Tripwire-v2</span>
+                            </div>
+                            <div className="flex justify-between items-center pb-1.5 border-b border-border/20">
+                              <span className="text-muted-foreground">DETECTION MODE:</span>
+                              <span className="text-foreground">Virtual Tripwire Overlay</span>
+                            </div>
+                            <div className="flex justify-between items-center pb-1.5 border-b border-border/20">
+                              <span className="text-muted-foreground">TRIGGER FRAMEWORK:</span>
+                              <span className="text-foreground">Intersection Vector crossing</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">MODEL ACCURACY:</span>
+                              <span className="text-tactical-green font-bold">96.8% mAP</span>
+                            </div>
+                          </div>
+
+                          <div className="bg-yellow-400/5 border border-yellow-400/25 p-3 rounded-lg space-y-1.5 font-mono text-xs text-yellow-400">
+                            <span className="font-bold uppercase tracking-wider block">Real-time Stream Diagnostics</span>
+                            <div className="flex justify-between">
+                              <span>Total Crossings:</span>
+                              <span className="font-bold tabular-nums">{crossingCounts[activeElement.id]}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Crossing Event:</span>
+                              <span className={`font-bold transition-all ${lastCrossed[activeElement.id] ? "text-yellow-300 scale-105" : "opacity-60"}`}>
+                                {lastCrossed[activeElement.id] ? "▲ CROSSING DETECTED" : "▼ MONITORING FLOW"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       ) : (
                         <div className="pt-2.5">
                           <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase block mb-1.5">Details</span>
@@ -1150,7 +1221,22 @@ export default function PTBMapCanvas({
                     {/* Video feed rendering directly in this tab */}
                     {activeElement.type === "camera" && activeElement.videoUrl && (
                       <div className="space-y-2.5 pt-2.5">
-                        <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase block">Live Surveillance Stream</span>
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase block">Live Surveillance Stream</span>
+                          {COUNTER_CAMERAS.includes(activeElement.id) && (
+                            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border transition-all ${
+                              lastCrossed[activeElement.id]
+                                ? "bg-tactical-green/20 border-tactical-green/60 scale-105"
+                                : "bg-tactical-green/10 border-tactical-green/30"
+                            }`}>
+                              <User className="h-3 w-3 text-tactical-green" />
+                              <span className="font-mono text-[10px] font-bold text-tactical-green tabular-nums">
+                                COUNT: {crossingCounts[activeElement.id]}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
                         <div
                           onClick={() => setExpandedCamera(activeElement)}
                           className="relative rounded-lg overflow-hidden border border-border/60 bg-zinc-950 cursor-pointer hover:border-tactical-cyan/60 group transition-all"
@@ -1159,6 +1245,67 @@ export default function PTBMapCanvas({
                           {isPlayingFeed ? (
                             <>
                               <video src={activeElement.videoUrl} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+
+                              {/* Green detection line overlay */}
+                              {COUNTER_CAMERAS.includes(activeElement.id) && (
+                                <svg
+                                  className="absolute inset-0 w-full h-full pointer-events-none"
+                                  viewBox="0 0 100 100"
+                                  preserveAspectRatio="none"
+                                >
+                                  {/* Glow effect behind the line */}
+                                  <line
+                                    x1={activeElement.id === "CAM-PTB-CONG" ? "60" : "0"}
+                                    y1={activeElement.id === "CAM-PTB-CONG" ? "38" : "58"}
+                                    x2={activeElement.id === "CAM-PTB-CONG" ? "67" : "100"}
+                                    y2={activeElement.id === "CAM-PTB-CONG" ? "45" : "58"}
+                                    stroke="#00FF9D"
+                                    strokeWidth="1.5"
+                                    strokeOpacity="0.35"
+                                    filter="url(#lineGlow)"
+                                  />
+                                  {/* Main green line */}
+                                  <line
+                                    x1={activeElement.id === "CAM-PTB-CONG" ? "60" : "0"}
+                                    y1={activeElement.id === "CAM-PTB-CONG" ? "38" : "58"}
+                                    x2={activeElement.id === "CAM-PTB-CONG" ? "67" : "100"}
+                                    y2={activeElement.id === "CAM-PTB-CONG" ? "45" : "58"}
+                                    stroke="#00FF9D"
+                                    strokeWidth="0.6"
+                                    strokeDasharray={lastCrossed[activeElement.id] ? "none" : "4 2"}
+                                    strokeOpacity={lastCrossed[activeElement.id] ? "1" : "0.85"}
+                                  />
+                                  {/* Crossing flash indicator */}
+                                  {lastCrossed[activeElement.id] && (
+                                    <line
+                                      x1={activeElement.id === "CAM-PTB-CONG" ? "60" : "0"}
+                                      y1={activeElement.id === "CAM-PTB-CONG" ? "38" : "58"}
+                                      x2={activeElement.id === "CAM-PTB-CONG" ? "67" : "100"}
+                                      y2={activeElement.id === "CAM-PTB-CONG" ? "45" : "58"}
+                                      stroke="#00FF9D"
+                                      strokeWidth="1.5"
+                                      strokeOpacity="0.7"
+                                    />
+                                  )}
+                                  {/* "LINE" label */}
+                                  <text
+                                    x={activeElement.id === "CAM-PTB-CONG" ? "56" : "2"}
+                                    y={activeElement.id === "CAM-PTB-CONG" ? "35" : "55.5"}
+                                    fill="#00FF9D"
+                                    fontSize="3.5"
+                                    fontFamily="monospace"
+                                    fontWeight="bold"
+                                    opacity="0.9"
+                                  >TRIPWIRE LINE</text>
+                                  <defs>
+                                    <filter id="lineGlow">
+                                      <feGaussianBlur stdDeviation="1" result="blur" />
+                                      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                                    </filter>
+                                  </defs>
+                                </svg>
+                              )}
+
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                 <span className="font-mono text-[10px] text-tactical-cyan font-bold tracking-widest uppercase bg-black/60 px-2.5 py-1 rounded border border-tactical-cyan/40">
                                   CLICK TO ENLARGE VIDEO FEED
@@ -1177,6 +1324,17 @@ export default function PTBMapCanvas({
                             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                             LIVEFEED
                           </div>
+                          {/* Counter badge on video */}
+                          {COUNTER_CAMERAS.includes(activeElement.id) && (
+                            <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded font-mono text-[9px] font-bold pointer-events-none transition-all ${
+                              lastCrossed[activeElement.id]
+                                ? "bg-tactical-green text-black scale-110"
+                                : "bg-black/70 text-tactical-green border border-tactical-green/40"
+                            }`}>
+                              <User className="h-2.5 w-2.5" />
+                              {crossingCounts[activeElement.id]}
+                            </div>
+                          )}
                         </div>
                         <span className="font-mono text-[9px] text-muted-foreground block text-right mt-1.5">
                           *Click camera feed box to expand surveillance stream to fullscreen
@@ -1240,14 +1398,83 @@ export default function PTBMapCanvas({
             </button>
 
             {/* The Huge Video */}
-            <video
-              src={expandedCamera.videoUrl}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-auto max-h-[80vh] object-contain pointer-events-none"
-            />
+            <div className="relative w-full">
+              <video
+                src={expandedCamera.videoUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-auto max-h-[80vh] object-contain pointer-events-none"
+              />
+
+              {/* Green detection line overlay in fullscreen */}
+              {COUNTER_CAMERAS.includes(expandedCamera.id) && (
+                <svg
+                  className="absolute inset-0 w-full h-full pointer-events-none"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    <filter id="lineGlowLarge">
+                      <feGaussianBlur stdDeviation="0.8" result="blur" />
+                      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                  </defs>
+                  <line
+                    x1={expandedCamera.id === "CAM-PTB-CONG" ? "60" : "0"}
+                    y1={expandedCamera.id === "CAM-PTB-CONG" ? "38" : "58"}
+                    x2={expandedCamera.id === "CAM-PTB-CONG" ? "67" : "100"}
+                    y2={expandedCamera.id === "CAM-PTB-CONG" ? "45" : "58"}
+                    stroke="#00FF9D" strokeWidth="2" strokeOpacity="0.3" filter="url(#lineGlowLarge)"
+                  />
+                  <line
+                    x1={expandedCamera.id === "CAM-PTB-CONG" ? "60" : "0"}
+                    y1={expandedCamera.id === "CAM-PTB-CONG" ? "38" : "58"}
+                    x2={expandedCamera.id === "CAM-PTB-CONG" ? "67" : "100"}
+                    y2={expandedCamera.id === "CAM-PTB-CONG" ? "45" : "58"}
+                    stroke="#00FF9D"
+                    strokeWidth="0.4"
+                    strokeDasharray={lastCrossed[expandedCamera.id] ? "none" : "4 2"}
+                    strokeOpacity={lastCrossed[expandedCamera.id] ? "1" : "0.85"}
+                  />
+                  {lastCrossed[expandedCamera.id] && (
+                    <line
+                      x1={expandedCamera.id === "CAM-PTB-CONG" ? "60" : "0"}
+                      y1={expandedCamera.id === "CAM-PTB-CONG" ? "38" : "58"}
+                      x2={expandedCamera.id === "CAM-PTB-CONG" ? "67" : "100"}
+                      y2={expandedCamera.id === "CAM-PTB-CONG" ? "45" : "58"}
+                      stroke="#00FF9D" strokeWidth="1" strokeOpacity="0.8"
+                    />
+                  )}
+                  <text
+                    x={expandedCamera.id === "CAM-PTB-CONG" ? "56" : "1.5"}
+                    y={expandedCamera.id === "CAM-PTB-CONG" ? "35" : "55.5"}
+                    fill="#00FF9D" fontSize="2.5" fontFamily="monospace" fontWeight="bold" opacity="0.9"
+                  >TRIPWIRE LINE</text>
+                </svg>
+              )}
+
+              {/* Counter overlay in fullscreen */}
+              {COUNTER_CAMERAS.includes(expandedCamera.id) && (
+                <div className={`absolute top-16 right-4 z-30 flex flex-col items-end gap-1 transition-all`}>
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono font-bold shadow-lg transition-all ${
+                    lastCrossed[expandedCamera.id]
+                      ? "bg-tactical-green text-black scale-105"
+                      : "bg-black/70 border border-tactical-green/50 text-tactical-green"
+                  }`}>
+                    <User className="h-4 w-4" />
+                    <span className="text-lg tabular-nums">{crossingCounts[expandedCamera.id]}</span>
+                    <span className="text-[10px] opacity-70 font-normal">CROSSINGS</span>
+                  </div>
+                  {lastCrossed[expandedCamera.id] && (
+                    <span className="font-mono text-[10px] font-bold text-tactical-green bg-black/60 px-2 py-0.5 rounded animate-pulse">
+                      ▲ LINE CROSSED
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Bottom Info Overlays */}
             <div className="absolute bottom-6 left-6 z-20 flex flex-wrap items-center gap-2 md:gap-4 pointer-events-none">
