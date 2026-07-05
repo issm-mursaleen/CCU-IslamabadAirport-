@@ -433,6 +433,9 @@ export default function PTBMapCanvas({
     return () => clearInterval(timer);
   }, [anprStage]);
 
+  const [openTabs, setOpenTabs] = useState<InteractiveMarker[]>([]);
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+
   // Auto-increment people counter for active camera if it is a counter camera
   useEffect(() => {
     if (!activeTabId || !COUNTER_CAMERAS.includes(activeTabId)) return;
@@ -475,8 +478,6 @@ export default function PTBMapCanvas({
   // Track resolved alerts by marker ID globally
   const [resolvedAlerts, setResolvedAlerts] = useState<string[]>([]);
 
-  const [openTabs, setOpenTabs] = useState<InteractiveMarker[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [isPlayingFeed, setIsPlayingFeed] = useState(true);
   const [expandedCamera, setExpandedCamera] = useState<InteractiveMarker | null>(null);
 

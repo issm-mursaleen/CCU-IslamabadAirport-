@@ -223,6 +223,7 @@ const events: SecurityEvent[] = [
     icon: Eye,
     description: "Face Detection module active. Analyzing passenger flows and profiling at the airplane exit corridor.",
     action: "Verify boarding records and monitor exit flow.",
+    video: "/videos/face+_detection_airplane_Exit.mp4",
   },
   {
     id: "EVT-010",
@@ -826,18 +827,6 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                           : "Processing bottleneck for Turkish Airlines flight TK-711 to Istanbul (IST). Security clearance delays at immigration counters are backing up into the main concourse area, requiring additional lane activation."
                         }
                       </p>
-                    </div>
-                  </div>
-                ) : incident.kind === "unattended_baggage" && incident.detail ? (
-                  <div className="space-y-3 font-mono text-xs">
-                    <div>
-                      <span className="block text-[9px] text-muted-foreground tracking-wider uppercase mb-1">Baggage Diagnostics</span>
-                      <ul className="list-disc pl-4 space-y-1 text-foreground/90">
-                        <li>Description: <span className="text-tactical-red font-bold">{incident.detail.bagDesc}</span></li>
-                        <li>Abandoned Duration: <span className="text-tactical-amber font-bold">{formatUnattendedTime(unattendedBagTime)}</span></li>
-                        <li>Alert Trigger: <span className="text-foreground/95">{incident.detail.alertTrigger}</span></li>
-                        <li>Threat Level: <span className="text-tactical-red font-bold">{incident.detail.threatLevel}</span></li>
-                      </ul>
                     </div>
                   </div>
                 ) : (

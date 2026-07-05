@@ -1156,33 +1156,6 @@ export default function ASFPage() {
                             </div>
                           )}
 
-                          {/* Unattended baggage — CCTV surveillance profile */}
-                          {activeIncident.kind === "unattended_baggage" && (
-                            <div className="rounded-lg bg-tactical-red/5 border border-tactical-red/25 overflow-hidden">
-                              <div className="flex items-center gap-1.5 px-3 py-2 border-b border-tactical-red/20 bg-tactical-red/10">
-                                <Luggage className="h-3.5 w-3.5 text-tactical-red animate-pulse" />
-                                <span className="font-mono text-[9px] font-bold text-tactical-red tracking-wider uppercase">Unattended Baggage Alert</span>
-                                <span className="ml-auto font-mono text-[8px] text-tactical-red font-bold">{detail.confidence}% DETECTED</span>
-                              </div>
-                              <div className="p-3 flex gap-3">
-                                <div 
-                                  onClick={() => setZoomedImage(detail.bagImage || "/unattended_blue_bag.png")}
-                                  className="h-12 w-12 rounded bg-secondary border border-border flex items-center justify-center shrink-0 overflow-hidden cursor-zoom-in hover:border-tactical-red transition-colors"
-                                >
-                                  <img src={detail.bagImage || "/unattended_blue_bag.png"} className="w-full h-full object-cover" alt="Suitcase" />
-                                </div>
-                                <div className="text-[10px] font-mono space-y-0.5 min-w-0 text-left">
-                                  <p className="text-foreground font-bold">Item: <span className="text-tactical-red font-bold">{detail.bagDesc}</span></p>
-                                  <p className="text-foreground"><span className="text-muted-foreground">Status:</span> <span className="text-tactical-red font-bold animate-pulse">FLAGGED (8 MINUTES)</span></p>
-                                  <p className="text-foreground"><span className="text-muted-foreground">Abandoned for:</span> <span className="text-tactical-amber font-bold">{formatUnattendedTime(unattendedBagTime)}</span></p>
-                                  <p className="text-foreground"><span className="text-muted-foreground">Thermal Signature:</span> {detail.thermalSignature}</p>
-                                  <p className="text-foreground"><span className="text-muted-foreground">Threat Level:</span> <span className="text-tactical-red font-bold">{detail.threatLevel}</span></p>
-                                  <p className="text-muted-foreground leading-tight mt-0.5">{detail.alertTrigger}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
 
                         </div>
                       )}
