@@ -26,15 +26,15 @@ interface KeyFrame {
 
 // Bounding box keyframes mapped to the actual subject motion in public/videos/Loitering_2.mp4
 const LOITERING_KEYFRAMES: KeyFrame[] = [
-  { time: 0.0, left: 12.0, top: 30.5, width: 12.5, height: 49.0 },
-  { time: 1.5, left: 14.5, top: 30.0, width: 12.0, height: 49.5 },
-  { time: 3.0, left: 16.0, top: 29.5, width: 12.5, height: 50.0 },
-  { time: 4.5, left: 17.5, top: 29.0, width: 13.0, height: 50.5 },
-  { time: 6.0, left: 18.0, top: 29.0, width: 13.0, height: 50.5 },
-  { time: 7.5, left: 17.0, top: 29.5, width: 12.5, height: 50.0 },
-  { time: 9.0, left: 15.5, top: 30.0, width: 12.0, height: 49.5 },
-  { time: 10.5, left: 13.5, top: 30.5, width: 12.5, height: 49.0 },
-  { time: 12.0, left: 12.0, top: 30.5, width: 12.5, height: 49.0 }
+  { time: 0.0, left: 17.0, top: 43.5, width: 8.5, height: 37.0 },
+  { time: 1.5, left: 18.5, top: 43.0, width: 8.5, height: 37.5 },
+  { time: 3.0, left: 20.0, top: 42.5, width: 8.8, height: 38.0 },
+  { time: 4.5, left: 21.5, top: 42.0, width: 9.0, height: 38.5 },
+  { time: 6.0, left: 22.0, top: 42.0, width: 9.0, height: 38.5 },
+  { time: 7.5, left: 20.5, top: 42.5, width: 8.8, height: 38.0 },
+  { time: 9.0, left: 19.0, top: 43.0, width: 8.5, height: 37.5 },
+  { time: 10.5, left: 17.5, top: 43.5, width: 8.5, height: 37.0 },
+  { time: 12.0, left: 17.0, top: 43.5, width: 8.5, height: 37.0 }
 ];
 
 export default function VideoFeedWithOverlays({
@@ -51,7 +51,7 @@ export default function VideoFeedWithOverlays({
   evt203Count = 0,
 }: VideoFeedWithOverlaysProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [bbox, setBbox] = useState({ left: 12.0, top: 30.5, width: 12.5, height: 49.0, score: 98.6, visible: false });
+  const [bbox, setBbox] = useState({ left: 17.0, top: 43.5, width: 8.5, height: 37.0, score: 98.6, visible: false });
 
   const isLoiteringVideo = src?.includes("Loitering_2.mp4") || incidentKind === "perimeter_breach" || incidentId === "EVT-209";
   const isTripwireVideo = incidentId === "EVT-203" || src?.includes("counter_people_que.mp4");
