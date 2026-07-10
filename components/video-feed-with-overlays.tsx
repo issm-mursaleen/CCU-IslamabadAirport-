@@ -51,7 +51,7 @@ export default function VideoFeedWithOverlays({
   evt203Count = 0,
 }: VideoFeedWithOverlaysProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [bbox, setBbox] = useState({ left: 12.0, top: 30.5, width: 12.5, height: 49.0, score: 98.6 });
+  const [bbox, setBbox] = useState({ left: 12.0, top: 30.5, width: 12.5, height: 49.0, score: 98.6, visible: false });
 
   const isLoiteringVideo = src?.includes("Loitering_2.mp4") || incidentKind === "perimeter_breach" || incidentId === "EVT-209";
   const isTripwireVideo = incidentId === "EVT-203" || src?.includes("counter_people_que.mp4");
@@ -69,6 +69,9 @@ export default function VideoFeedWithOverlays({
       const keyframes = LOITERING_KEYFRAMES;
       const maxTime = keyframes[keyframes.length - 1].time;
       const t = time % maxTime;
+
+      // Detection triggers between 1.2s and 9.5s on the timeline
+      const visible = t >= 1.2 && t <= 9.5;
 
       let prev = keyframes[0];
       let next = keyframes[keyframes.length - 1];
@@ -98,7 +101,8 @@ export default function VideoFeedWithOverlays({
         top: Math.max(0, Math.min(100, top + jitter)),
         width: Math.max(1, Math.min(100, width + (Math.random() - 0.5) * 0.15)),
         height: Math.max(1, Math.min(100, height + (Math.random() - 0.5) * 0.15)),
-        score: Math.min(100, Math.max(90, 97.4 + Math.random() * 2.4))
+        score: Math.min(100, Math.max(90, 97.4 + Math.random() * 2.4)),
+        visible
       });
 
       frameId = requestAnimationFrame(updateBoundingBox);
@@ -122,7 +126,7 @@ export default function VideoFeedWithOverlays({
       />
 
       {/* ── PERSON DETECTION CV BOUNDING BOX OVERLAY ── */}
-      {isLoiteringVideo && (
+      {isLoiteringVideo && bbox.visible && (
         <div className="absolute inset-0 pointer-events-none z-20 font-mono select-none overflow-hidden">
           {/* Target Tracking Bounding Box */}
           <div
