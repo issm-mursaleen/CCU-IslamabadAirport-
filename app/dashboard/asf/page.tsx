@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useAlerts } from "@/components/alert-context";
 import { useASF, seedIncidents, type IncidentStatus, type ASFGroup, type Zone } from "@/components/asf-context";
+import VideoFeedWithOverlays from "@/components/video-feed-with-overlays";
 import {
   Crosshair,
   AlertTriangle,
@@ -935,34 +936,13 @@ export default function ASFPage() {
                             onClick={() => setShowFeedDetail(true)}
                             className="relative w-full aspect-video rounded-lg overflow-hidden border border-tactical-red/30 bg-black group shadow-[0_0_15px_rgba(239,68,68,0.1)] cursor-pointer hover:border-tactical-red/60 transition-colors"
                           >
-                            <video
-                              key={activeIncident.videoSrc}
+                            <VideoFeedWithOverlays
                               src={activeIncident.videoSrc}
-                              autoPlay loop muted playsInline
+                              incidentId={activeIncident.id}
+                              incidentKind={activeIncident.kind}
+                              evt203LastCrossed={evt203LastCrossed}
                               className="w-full h-full object-cover opacity-90 group-hover:scale-102 transition-transform duration-700"
                             />
-                            
-                            {/* Tripwire line overlay for Event 203 */}
-                            {activeIncident.id === "EVT-203" && (
-                              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                <line
-                                  x1="60" y1="38"
-                                  x2="67" y2="45"
-                                  stroke="#00FF9D"
-                                  strokeWidth="1.2"
-                                  strokeDasharray={evt203LastCrossed ? "none" : "3 1.5"}
-                                  strokeOpacity={evt203LastCrossed ? "1" : "0.85"}
-                                />
-                                {evt203LastCrossed && (
-                                  <line
-                                    x1="60" y1="38"
-                                    x2="67" y2="45"
-                                    stroke="#00FF9D" strokeWidth="2.5" strokeOpacity="0.65"
-                                  />
-                                )}
-                                <text x="60" y="35" fill="#00FF9D" fontSize="3.5" fontFamily="monospace" fontWeight="bold">TRIPWIRE LINE</text>
-                              </svg>
-                            )}
 
                             <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(rgba(0,255,157,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
                             <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[8px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1">
@@ -1104,10 +1084,10 @@ export default function ASFPage() {
                           onClick={() => setShowFeedDetail(true)}
                           className="relative w-full aspect-video rounded-lg overflow-hidden border border-tactical-red/30 bg-black group shadow-[0_0_15px_rgba(239,68,68,0.1)] cursor-pointer hover:border-tactical-red/60 transition-colors"
                         >
-                          <video
-                            key={activeIncident.videoSrc}
+                          <VideoFeedWithOverlays
                             src={activeIncident.videoSrc}
-                            autoPlay loop muted playsInline
+                            incidentId={activeIncident.id}
+                            incidentKind={activeIncident.kind}
                             className="w-full h-full object-cover opacity-90 group-hover:scale-102 transition-transform duration-700"
                           />
                           <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(rgba(0,255,157,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
@@ -1786,8 +1766,13 @@ export default function ASFPage() {
                   <div className="space-y-2">
                     <span className="block font-mono text-[9px] text-muted-foreground tracking-widest uppercase">Live Surveillance Feed</span>
                     <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border/50 bg-black">
-                      <video key={activeIncident.videoSrc} src={activeIncident.videoSrc} autoPlay loop muted playsInline className="w-full h-full object-cover" />
-                      <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[8px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1">
+                      <VideoFeedWithOverlays
+                        src={activeIncident.videoSrc}
+                        incidentId={activeIncident.id}
+                        incidentKind={activeIncident.kind}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2 left-2 z-30 px-2 py-0.5 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[8px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1">
                         <span className="h-1.5 w-1.5 rounded-full bg-tactical-red blink" />
                         {activeIncident.camera}
                       </div>
@@ -1907,8 +1892,13 @@ export default function ASFPage() {
                     <div className="space-y-2">
                       <span className="block font-mono text-[9px] text-muted-foreground tracking-widest uppercase">Live Surveillance Feed</span>
                       <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border/50 bg-black">
-                        <video src={activeIncident.videoSrc} autoPlay loop muted playsInline className="w-full h-full object-cover" />
-                        <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[8px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1">
+                        <VideoFeedWithOverlays
+                          src={activeIncident.videoSrc}
+                          incidentId={activeIncident.id}
+                          incidentKind={activeIncident.kind}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-2 left-2 z-30 px-2 py-0.5 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[8px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1">
                           <span className="h-1.5 w-1.5 rounded-full bg-tactical-red blink" />
                           {activeIncident.camera}
                         </div>
@@ -2530,34 +2520,13 @@ export default function ASFPage() {
 
             <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-tactical-red/30 bg-black">
-                <video
-                  key={activeIncident.videoSrc}
+                <VideoFeedWithOverlays
                   src={activeIncident.videoSrc}
-                  autoPlay loop muted playsInline
+                  incidentId={activeIncident.id}
+                  incidentKind={activeIncident.kind}
+                  evt203LastCrossed={evt203LastCrossed}
                   className="w-full h-full object-cover"
                 />
-                
-                 {/* Tripwire line overlay for Event 203 */}
-                {activeIncident.id === "EVT-203" && (
-                  <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <line
-                      x1="60" y1="38"
-                      x2="67" y2="45"
-                      stroke="#00FF9D"
-                      strokeWidth="1.2"
-                      strokeDasharray={evt203LastCrossed ? "none" : "3 1.5"}
-                      strokeOpacity={evt203LastCrossed ? "1" : "0.85"}
-                    />
-                    {evt203LastCrossed && (
-                      <line
-                        x1="60" y1="38"
-                        x2="67" y2="45"
-                        stroke="#00FF9D" strokeWidth="2.5" strokeOpacity="0.65"
-                      />
-                    )}
-                    <text x="60" y="35" fill="#00FF9D" fontSize="3.5" fontFamily="monospace" fontWeight="bold">TRIPWIRE LINE</text>
-                  </svg>
-                )}
 
                 <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded bg-black/60 border border-white/10 backdrop-blur-md text-[10px] font-mono font-bold tracking-widest text-tactical-red flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-tactical-red blink" />

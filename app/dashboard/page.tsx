@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useASF, seedIncidents, type Zone, type Incident, type ASFGroup } from "@/components/asf-context";
 import { DigitalTwin3D } from "@/components/digital-twin";
+import VideoFeedWithOverlays from "@/components/video-feed-with-overlays";
 import {
   Crosshair,
   ShieldCheck,
@@ -288,17 +289,13 @@ function CameraModal({ cam, onClose }: { cam: typeof cameras[0]; onClose: () => 
         </div>
         {/* Video */}
         <div className="relative bg-card" style={{ aspectRatio: "16/9" }}>
-          <video
-            key={cam.video}
+          <VideoFeedWithOverlays
             src={cam.video}
-            autoPlay
-            muted
-            loop
-            playsInline
             controls
             className="w-full h-full object-contain"
+            incidentKind={cam.id === "CAM-002" ? "perimeter_breach" : undefined}
           />
-          <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 3px)" }} />
+          <div className="absolute inset-0 pointer-events-none z-10" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 3px)" }} />
         </div>
       </div>
     </div>
@@ -690,16 +687,13 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                 <div className="space-y-2">
                   <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold">RETRIEVED VIDEO CAPTURE</span>
                   <div className="rounded-xl overflow-hidden border border-border/40 relative bg-zinc-900" style={{ aspectRatio: "16/9" }}>
-                    <video
-                      key={incident.videoSrc}
+                    <VideoFeedWithOverlays
                       src={incident.videoSrc}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
+                      incidentId={incident.id}
+                      incidentKind={incident.kind}
                       className="absolute inset-0 w-full h-full object-cover"
                     />
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[8px] font-bold tracking-widest z-10">
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[8px] font-bold tracking-widest z-30">
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                       FEED RECORD
                     </div>
@@ -930,39 +924,15 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                 <div className="space-y-3">
                   <span className="block text-[9px] text-muted-foreground tracking-[0.18em] uppercase font-bold text-left">RETRIEVED VIDEO CAPTURE</span>
                   <div className="rounded-xl overflow-hidden border border-border/40 relative bg-zinc-900" style={{ aspectRatio: "16/9" }}>
-                    <video
-                      key={incident.videoSrc}
+                    <VideoFeedWithOverlays
                       src={incident.videoSrc}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
+                      incidentId={incident.id}
+                      incidentKind={incident.kind}
+                      evt203LastCrossed={evt203LastCrossed}
                       className="absolute inset-0 w-full h-full object-cover"
                     />
-                    
-                    {/* Tripwire line overlay for Event 203 */}
-                    {incident.id === "EVT-203" && (
-                      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        <line
-                          x1="60" y1="38"
-                          x2="67" y2="45"
-                          stroke="#00FF9D"
-                          strokeWidth="1.2"
-                          strokeDasharray={evt203LastCrossed ? "none" : "3 1.5"}
-                          strokeOpacity={evt203LastCrossed ? "1" : "0.85"}
-                        />
-                        {evt203LastCrossed && (
-                          <line
-                            x1="60" y1="38"
-                            x2="67" y2="45"
-                            stroke="#00FF9D" strokeWidth="2.5" strokeOpacity="0.65"
-                          />
-                        )}
-                        <text x="60" y="35" fill="#00FF9D" fontSize="3.5" fontFamily="monospace" fontWeight="bold">TRIPWIRE LINE</text>
-                      </svg>
-                    )}
 
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[8px] font-bold tracking-widest z-10">
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[8px] font-bold tracking-widest z-30">
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                       FEED RECORD
                     </div>
@@ -1546,17 +1516,14 @@ function EventDetailModal({ event, onClose }: { event: SecurityEvent; onClose: (
 
           {/* Camera feed */}
           <div className="rounded-xl overflow-hidden border border-border/40 relative bg-zinc-900" style={{ aspectRatio: "16/9" }}>
-            <video
-              key={event.video}
+            <VideoFeedWithOverlays
               src={event.video}
-              autoPlay
-              muted
-              loop
-              playsInline
+              incidentId={event.id.toString()}
+              incidentKind={event.title.toLowerCase().includes("perimeter") ? "perimeter_breach" : undefined}
               className="absolute inset-0 w-full h-full object-cover"
             />
-            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 3px)" }} />
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[9px] font-bold tracking-widest">
+            <div className="absolute inset-0 pointer-events-none z-10" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 3px)" }} />
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-tactical-red px-2 py-0.5 rounded text-white font-mono text-[9px] font-bold tracking-widest z-30">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               LIVE
             </div>
