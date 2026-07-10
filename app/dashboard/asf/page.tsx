@@ -109,6 +109,7 @@ const kindIcon: Record<string, typeof Car> = {
   flagged_person: BadgeAlert,
   queue_congestion: UsersRound,
   unattended_baggage: Luggage,
+  perimeter_breach: ShieldAlert,
 };
 
 export default function ASFPage() {
@@ -649,7 +650,7 @@ export default function ASFPage() {
                   </div>
                 </div>
                 <div className="p-4 space-y-3.5 overflow-y-auto flex-1 font-mono text-xs">
-                  {activeIncident.kind === "stolen_vehicle" || activeIncident.id === "EVT-205" || activeIncident.id === "EVT-206" || activeIncident.kind === "queue_congestion" || activeIncident.kind === "unattended_baggage" ? (
+                  {activeIncident.kind === "stolen_vehicle" || activeIncident.id === "EVT-205" || activeIncident.id === "EVT-206" || activeIncident.kind === "queue_congestion" || activeIncident.kind === "unattended_baggage" || activeIncident.kind === "perimeter_breach" ? (
                     <>
                       {/* Top Row: Split 50/50 */}
                       <div className={`grid grid-cols-1 ${activeIncident.kind === "queue_congestion" ? "" : "md:grid-cols-[1fr_95px]"} gap-4`}>
@@ -723,6 +724,25 @@ export default function ASFPage() {
                                 <span className="text-tactical-red font-bold tracking-widest">{formatUnattendedTime(unattendedBagTime)}</span>
                               </div>
                             </div>
+                          ) : activeIncident.kind === "perimeter_breach" ? (
+                            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                              <div className="bg-card border border-border/40 p-2 rounded">
+                                <span className="text-muted-foreground block text-[8px] uppercase">INTRUSION TYPE</span>
+                                <span className="text-foreground font-bold truncate block">{detail?.intrusionType}</span>
+                              </div>
+                              <div className="bg-card border border-border/40 p-2 rounded">
+                                <span className="text-muted-foreground block text-[8px] uppercase">FENCE SECTOR</span>
+                                <span className="text-tactical-red font-bold truncate block">{detail?.fenceSector}</span>
+                              </div>
+                              <div className="bg-card border border-border/40 p-2 rounded">
+                                <span className="text-muted-foreground block text-[8px] uppercase">OBJECT TYPE</span>
+                                <span className="text-foreground font-bold block truncate">{detail?.objectType}</span>
+                              </div>
+                              <div className="bg-card border border-border/40 p-2 rounded">
+                                <span className="text-muted-foreground block text-[8px] uppercase">TRIGGER SENSOR</span>
+                                <span className="text-tactical-cyan font-bold block truncate">{detail?.sensorTrigger}</span>
+                              </div>
+                            </div>
                           ) : (
                             <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
                               <div className="bg-card border border-border/40 p-2 rounded">
@@ -786,6 +806,21 @@ export default function ASFPage() {
                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
                                  <div className="absolute top-1.5 right-1.5 px-1 py-0.5 rounded bg-tactical-red text-white text-[5px] font-bold font-mono tracking-widest animate-pulse">
                                    FLAGGED
+                                 </div>
+                               </div>
+                             ) : activeIncident.kind === "perimeter_breach" ? (
+                               <div
+                                 onClick={() => setZoomedImage(detail?.bagImage || "/loitering_screenshot.png")}
+                                 className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black group shadow-md cursor-zoom-in hover:border-tactical-red/60 transition-all duration-300"
+                               >
+                                 <img
+                                   src={detail?.bagImage || "/loitering_screenshot.png"}
+                                   alt="Perimeter Intruder"
+                                   className="w-full h-full object-cover opacity-90"
+                                 />
+                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                                 <div className="absolute top-1.5 right-1.5 px-1 py-0.5 rounded bg-tactical-red text-white text-[5px] font-bold font-mono tracking-widest animate-pulse">
+                                   BREACH
                                  </div>
                                </div>
                              ) : (

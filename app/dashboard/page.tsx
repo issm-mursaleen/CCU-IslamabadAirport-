@@ -381,7 +381,7 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
 
         {/* Scrollable body */}
         <div className="overflow-y-auto flex-1 p-6 space-y-5 font-mono text-xs">
-          {incident.kind === "stolen_vehicle" || incident.id === "EVT-205" || incident.id === "EVT-206" || incident.kind === "unattended_baggage" ? (
+          {incident.kind === "stolen_vehicle" || incident.id === "EVT-205" || incident.id === "EVT-206" || incident.kind === "unattended_baggage" || incident.kind === "perimeter_breach" ? (
             <>
               {/* Top Row: Split 50/50 */}
               <div className="grid grid-cols-1 md:grid-cols-[1fr_150px] gap-5">
@@ -469,6 +469,33 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                         <span className="text-muted-foreground text-[10px] block mt-1">{incident.detail?.alertTrigger}</span>
                       </div>
                     </div>
+                  ) : incident.kind === "perimeter_breach" ? (
+                    <div className="grid grid-cols-2 gap-3 font-mono">
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">INTRUSION TYPE</span>
+                        <span className="font-bold text-foreground text-xs">{incident.detail?.intrusionType}</span>
+                      </div>
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">FENCE SECTOR</span>
+                        <span className="font-bold text-tactical-red text-xs tracking-widest">{incident.detail?.fenceSector}</span>
+                      </div>
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">OBJECT TYPE</span>
+                        <span className="font-bold text-foreground text-xs">{incident.detail?.objectType}</span>
+                      </div>
+                      <div className="bg-card border border-border/40 p-2.5 rounded">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">SENSOR SENSOR TRIGGER</span>
+                        <span className="font-bold text-tactical-cyan text-xs">{incident.detail?.sensorTrigger}</span>
+                      </div>
+                      <div className="bg-card border border-border/40 p-2.5 rounded col-span-2">
+                        <span className="block text-[9px] text-muted-foreground uppercase mb-0.5">AI ALERT ANALYSIS</span>
+                        <div className="flex justify-between items-center mt-0.5">
+                          <span className="text-tactical-red font-bold text-[10px]">{incident.detail?.threatLevel} THREAT RISK</span>
+                          <span className="text-tactical-amber font-bold text-[10px]">{incident.detail?.confidence}% CONFIDENCE</span>
+                        </div>
+                        <span className="text-muted-foreground text-[10px] block mt-1">{incident.detail?.remedialAction}</span>
+                      </div>
+                    </div>
                   ) : (
                     /* stolen vehicle specs */
                     incident.detail && (
@@ -538,6 +565,21 @@ function IncidentDetailModal({ incident, onClose }: { incident: Incident; onClos
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
                       <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-tactical-red text-white text-[7px] font-bold font-mono tracking-widest animate-pulse">
                         FLAGGED: {incident.id === "EVT-207" ? "5 MINS" : "8 MINS"}
+                      </div>
+                    </div>
+                  ) : incident.kind === "perimeter_breach" ? (
+                    <div 
+                      onClick={() => setZoomedImage(incident.detail?.bagImage || "/loitering_screenshot.png")}
+                      className="relative aspect-[4/3] rounded-lg overflow-hidden border border-tactical-red/35 bg-black group shadow-md cursor-zoom-in hover:border-tactical-red/60 transition-all duration-300"
+                    >
+                      <img 
+                        src={incident.detail?.bagImage || "/loitering_screenshot.png"} 
+                        alt="Perimeter Intruder" 
+                        className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                      <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-tactical-red text-white text-[7px] font-bold font-mono tracking-widest animate-pulse">
+                        BREACH CAPTURE
                       </div>
                     </div>
                   ) : (

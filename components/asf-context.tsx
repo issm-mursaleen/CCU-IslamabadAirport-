@@ -11,7 +11,8 @@ export type EventKind =
   | "blacklisted_vehicle"
   | "flagged_person"
   | "queue_congestion"
-  | "unattended_baggage";
+  | "unattended_baggage"
+  | "perimeter_breach";
 
 /* Detail payload attached to a camera event — fields depend on kind */
 export type EventDetail = {
@@ -51,6 +52,11 @@ export type EventDetail = {
   alertTrigger?: string;
   remedialAction?: string;
   bagImage?: string;
+  /* perimeter breach events */
+  intrusionType?: string;
+  fenceSector?: string;
+  sensorTrigger?: string;
+  objectType?: string;
 };
 
 export type Incident = {
@@ -264,6 +270,24 @@ export const seedIncidents: Incident[] = [
       alertTrigger: "AI Object Abandonment Algorithm (CCTV)",
       remedialAction: "Dispatch nearest patrol force to secure the perimeter around Carousel 4 and inspect the items.",
       bagImage: "/unattended_blue_bag.png"
+    }
+  },
+  {
+    id: "EVT-209", type: "PERIMETER BREACH", typeCode: "red", kind: "perimeter_breach",
+    description: "Perimeter warning triggered in Zone C (Runway West fence boundary). Surveillance feeds confirm subject too close to the secured perimeter fence boundary, violating proximity restrictions.",
+    site: "Zone C — Runway West Fence", zone: "Zone C",
+    camera: "CAM-002 (Perimeter West)", videoSrc: "/videos/Loitering_2.mp4",
+    lat: 33.5488, lng: 72.8135, reported: "14:45 PKT", requiredCap: "armed",
+    status: "pending", assignedGroup: null,
+    detail: {
+      confidence: 98,
+      intrusionType: "Fence Proximity Intrusion / Subject Too Close",
+      fenceSector: "Sector C-4 (Runway West)",
+      sensorTrigger: "Perimeter Boundary Cordon Proximity Alert",
+      objectType: "Person (Intruder)",
+      threatLevel: "CRITICAL",
+      remedialAction: "Sound local warning sirens. Dispatch closest armed Quick Response Unit to inspect the boundary fence immediately.",
+      bagImage: "/loitering_screenshot.png"
     }
   },
 ];

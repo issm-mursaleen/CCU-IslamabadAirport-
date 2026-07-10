@@ -47,6 +47,7 @@ const ALERT_MARKERS: Array<{
   { id: "alert-1", label: "BREACH", position: [33.5662, 72.8190], color: "#FF3D3D" }, // North fence sensor breach
   { id: "alert-2", label: "CARGO-WARN", position: [33.5540, 72.8310], color: "#FFB700" }, // Cargo terminal left bag
   { id: "alert-3", label: "TAXI-ALERT", position: [33.5582, 72.8160], color: "#FF3D3D" }, // Unauthorized movement near Taxiway Bravo
+  { id: "alert-4", label: "RUNWAY-BREACH", position: [33.5488, 72.8135], color: "#FF3D3D" }, // Runway West fence breach
 ];
 
 const STRUCTURE_BLOCKS: Array<{

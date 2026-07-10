@@ -39,6 +39,7 @@ const CAMERA_FEEDS = [
   { id: "CAM-323", name: "ZONE B — FIA ZONE TRACKER 1", zone: "Zone B", src: "/videos/Fia_counter.mp4", status: "live" },
   { id: "CAM-326", name: "ZONE B — FIA ZONE TRACKER 2", zone: "Zone B", src: "/videos/zone_tracker_output_counter.mp4", status: "live" },
   { id: "CAM-330", name: "ZONE B — GATE 12 BOARDING EXIT", zone: "Zone B", src: "/videos/face+_detection_airplane_Exit.mp4", status: "live" },
+  { id: "CAM-002", name: "ZONE C — RUNWAY WEST FENCE", zone: "Zone C", src: "/videos/Loitering_2.mp4", status: "live" },
 ];
 
 const CAMERA_GROUPS = [
@@ -151,6 +152,22 @@ const LIVE_EVENTS: LiveEvent[] = [
     description: "CCTV object analytics flagged unclaimed luggage left unattended near Carousel 4. Subject custody lost for over 8 minutes.",
     action: "Isolate immediate zone. Dispatch terminal security unit for manual check.",
     video: "/videos/bag_count_output baggeges.mp4",
+  },
+  {
+    id: 6,
+    title: "Perimeter Breach Detected",
+    camId: "CAM-002",
+    location: "Zone C — Runway West Fence",
+    cam: "CAM-002 • Perimeter West",
+    time: "14:45",
+    timestamp: "06/03/2026, 14:45:22",
+    color: "text-tactical-red",
+    level: "critical",
+    confidence: 98,
+    icon: AlertTriangle,
+    description: "AI sensor triggered perimeter warning in Zone C (Runway West fence boundary). Surveillance feeds confirm subject too close to the secured perimeter fence boundary, violating proximity restrictions.",
+    action: "Sound local warning sirens. Dispatch closest armed Quick Response Unit to inspect the boundary fence immediately.",
+    video: "/videos/Loitering_2.mp4",
   },
 ];
 
